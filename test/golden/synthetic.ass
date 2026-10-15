@@ -1,0 +1,22 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 600
+PlayResY: 1432
+WrapStyle: 0
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Caption,Inter ExtraBold,38.0,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,5,28.0,28.0,0,1
+Style: Ring,Inter ExtraBold,20,&H8C202020,&H00FFFFFF,&H10FFFFFF,&HA0000000,0,0,0,0,100,100,0,0,1,4.0,2.0,5,0,0,0,1
+Style: Spot,Inter ExtraBold,20,&HFF000000,&H00FFFFFF,&H00D65658,&H00000000,0,0,0,0,100,100,0,0,1,5.0,0,7,0,0,0,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 1,0:00:00.00,0:00:01.70,Caption,,0,0,0,,{\an5\pos(300,64)}Open Settings
+Dialogue: 1,0:00:01.70,0:00:06.63,Caption,,0,0,0,,{\an5\pos(300,64)}Pick your training days
+Dialogue: 1,0:00:06.63,0:00:08.73,Caption,,0,0,0,,{\an5\pos(300,64)}Saved for every week
+Dialogue: 3,0:00:01.15,0:00:01.65,Ring,,0,0,0,,{\an5\pos(149.3,426.5)\fscx80\fscy80\t(0,300,\fscx115\fscy115)\fad(40,220)\p1}m 0 -34.0 b 18.8 -34.0 34.0 -18.8 34.0 0 b 34.0 18.8 18.8 34.0 0 34.0 b -18.8 34.0 -34.0 18.8 -34.0 0 b -34.0 -18.8 -18.8 -34.0 0 -34.0{\p0}
+Dialogue: 3,0:00:04.68,0:00:05.18,Ring,,0,0,0,,{\an5\pos(300.0,874.3)\fscx80\fscy80\t(0,300,\fscx115\fscy115)\fad(40,220)\p1}m 0 -34.0 b 18.8 -34.0 34.0 -18.8 34.0 0 b 34.0 18.8 18.8 34.0 0 34.0 b -18.8 34.0 -34.0 18.8 -34.0 0 b -34.0 -18.8 -18.8 -34.0 0 -34.0{\p0}
+Dialogue: 3,0:00:06.18,0:00:06.68,Ring,,0,0,0,,{\an5\pos(363.6,384.1)\fscx80\fscy80\t(0,300,\fscx115\fscy115)\fad(40,220)\p1}m 0 -34.0 b 18.8 -34.0 34.0 -18.8 34.0 0 b 34.0 18.8 18.8 34.0 0 34.0 b -18.8 34.0 -34.0 18.8 -34.0 0 b -34.0 -18.8 -18.8 -34.0 0 -34.0{\p0}
+Dialogue: 3,0:00:05.83,0:00:06.73,Spot,,0,0,0,,{\an7\pos(250.1,310.0)\fad(100,100)\p1}m 22.0 0 l 205.0 0 b 227.0 0 227.0 0 227.0 22.0 l 227.0 126.2 b 227.0 148.2 227.0 148.2 205.0 148.2 l 22.0 148.2 b 0 148.2 0 148.2 0 126.2 l 0 22.0 b 0 0 0 0 22.0 0{\p0}

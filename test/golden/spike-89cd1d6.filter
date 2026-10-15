@@ -1,0 +1,5 @@
+[0:v]fps=30,tpad=stop_mode=clone:stop_duration=5,split=1[p0];
+[p0]trim=start=6.876:end=17.978,setpts=(PTS-STARTPTS)/1[s0];
+[s0]concat=n=1:v=1:a=0,fps=30,zoompan=z='1+1.200*((clip((it-5.552)/0.3,0,1))*(clip((it-5.552)/0.3,0,1))*(3-2*(clip((it-5.552)/0.3,0,1)))-(clip((it-6.752)/0.3,0,1))*(clip((it-6.752)/0.3,0,1))*(3-2*(clip((it-6.752)/0.3,0,1))))':x='0+657.8*((clip((it-5.552)/0.3,0,1))*(clip((it-5.552)/0.3,0,1))*(3-2*(clip((it-5.552)/0.3,0,1)))-(clip((it-6.752)/0.3,0,1))*(clip((it-6.752)/0.3,0,1))*(3-2*(clip((it-6.752)/0.3,0,1))))':y='0+0.0*((clip((it-5.552)/0.3,0,1))*(clip((it-5.552)/0.3,0,1))*(3-2*(clip((it-5.552)/0.3,0,1)))-(clip((it-6.752)/0.3,0,1))*(clip((it-6.752)/0.3,0,1))*(3-2*(clip((it-6.752)/0.3,0,1))))':d=1:s=600x1304:fps=30,pad=600:1432:0:128:color=0x5856D6,subtitles=render.ass:fontsdir=fonts,fps=15,split[a][b];
+[a]palettegen=stats_mode=diff[pal];
+[b][pal]paletteuse=dither=bayer:bayer_scale=4:diff_mode=rectangle[v]

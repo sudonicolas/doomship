@@ -10,6 +10,7 @@ import { checkSimulator, createSimulatorArgs, formatChecks, runDoctor } from './
 import { fontsDir } from './fonts.ts';
 import { iosDriver } from './drivers/ios/index.ts';
 import { prepare } from './prepare.ts';
+import { render } from './render/index.ts';
 import { loadRun } from './run.ts';
 
 const usage = `Usage: doomship <command> [options]
@@ -20,6 +21,7 @@ Commands:
   build <run>               Build the run's demo.swift; a failure is written to failure.txt.
   record <run>              Build, then record the demo: video.mov and events.json, or failure.txt.
                             Exits 0 recorded, 1 the build or the demo failed, 2 it stalled twice.
+  render <run>              Render the recording as the PR GIF, with its poster and sidecar.
 
 A change is a commit, a range (a..b, or a...b from their merge-base), a branch (from where it left
 main), or --worktree for uncommitted changes.
@@ -27,6 +29,7 @@ main), or --worktree for uncommitted changes.
 Options:
   --worktree      The change is the working tree, untracked files included.
   --config <file> The config, instead of the repo's .doomship.json.
+  --mp4           render: an MP4 of the same cut too.
   -h, --help      Show this help.`;
 
 async function main(argv: string[]): Promise<number> {
@@ -40,6 +43,7 @@ async function main(argv: string[]): Promise<number> {
         fix: { type: 'boolean' },
         worktree: { type: 'boolean' },
         config: { type: 'string' },
+        mp4: { type: 'boolean' },
       },
     });
   } catch (e) {
@@ -119,6 +123,19 @@ async function main(argv: string[]): Promise<number> {
         return 0;
       } catch (e) {
         return fail(`record: ${(e as Error).message}`);
+      }
+    }
+    case 'render': {
+      if (rest.length !== 1) return usageError('render needs one run directory');
+      try {
+        const g = render(loadRun(rest[0]), { mp4: values.mp4 });
+        console.log([
+          `Rendered in ${g.seconds.toFixed(1)} s: ${g.duration.toFixed(1)} s, ${(g.bytes / 1048576).toFixed(1)} MB, ${g.width}×${g.height} at ${g.fps} fps`,
+          `  ${tilde(g.gif)}`, `  ${tilde(g.png)}`, `  ${tilde(g.json)}`, ...(g.mp4 ? [`  ${tilde(g.mp4)}`] : []),
+        ].join('\n'));
+        return 0;
+      } catch (e) {
+        return fail(`render: ${(e as Error).message}`);
       }
     }
     default:
