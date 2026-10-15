@@ -15,8 +15,8 @@ export const startMarker = '<!-- doomship -->';
 export const endMarker = '<!-- /doomship -->';
 /** Where "made with doomship" links (your notes, 2026-10-15). */
 export const doomshipUrl = 'https://github.com/sudonicolas/doomship';
-/** The GIF's width in the PR: half its pixels, so it's sharp on a retina screen. */
-export const shownWidth = 300;
+/** The GIF's width in the PR: half its pixels, so it's sharp on a retina screen (300 for a phone's 600). */
+export const shownWidth = (gifWidth?: number) => Math.round((gifWidth ?? 600) / 2);
 
 export type Slug = { owner: string; name: string };
 export const slugText = (s: Slug) => `${s.owner}/${s.name}`;
@@ -38,7 +38,7 @@ export function githubRepoOf(repo: string): Slug {
 /** What a render's sidecar JSON says (render/index.ts). */
 export type Sidecar = {
   commit: string; worktree: boolean; title: string; captions: string[];
-  duration: number; bytes: number; files: { gif: string; png: string };
+  duration: number; bytes: number; width?: number; files: { gif: string; png: string };
 };
 export type Found = Sidecar & { gif: string; json: string };
 
@@ -62,11 +62,11 @@ export function newestRender(repoName: string, sha: string): Found | undefined {
 const attr = (s: string) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 /** The section that goes in the PR description. */
-export function section(o: { url: string; captions: string[]; sha: string }): string {
+export function section(o: { url: string; captions: string[]; sha: string; width?: number }): string {
   const alt = o.captions.length ? o.captions.join('. ') : 'A GIF of the change';
   return [
     startMarker,
-    `<img src="${attr(o.url)}" width="${shownWidth}" alt="${attr(alt)}">`,
+    `<img src="${attr(o.url)}" width="${shownWidth(o.width)}" alt="${attr(alt)}">`,
     '',
     `<sub>${o.sha.slice(0, 7)} · made with <a href="${doomshipUrl}">doomship</a></sub>`,
     endMarker,
@@ -135,7 +135,7 @@ export function post(gh: Gh, repo: string, repoName: string, prArg: string, opts
   const url = opts.dryRun
     ? `https://github.com/${slugText(pr.headRepo)}/blob/COMMIT/${name}?raw=true`
     : upload(gh, pr.headRepo, pr.head, render.gif, name);
-  const sec = section({ url, captions: render.captions, sha: pr.head });
+  const sec = section({ url, captions: render.captions, sha: pr.head, width: render.width });
   const body = withSection(pr.body, sec);
   if (!opts.dryRun) {
     const r = gh(['pr', 'edit', String(pr.number), '--repo', slugText(githubRepoOf(repo)), '--body-file', '-'], body);

@@ -151,19 +151,31 @@ function capture(page: Page, dir: string) {
   mkdirSync(dir, { recursive: true });
   const frames: Frame[] = [];
   let running = true;
+  let waiters: { after: number; ok: () => void }[] = [];
   const loop = (async () => {
     while (running) {
       const a = Date.now() / 1000;
-      const shot = await page.screenshot({ type: 'jpeg', quality: 90, animations: 'allow', caret: 'initial', timeout: 0 }).catch(() => undefined);
+      // Bounded: a screenshot can hang (one started on about:blank as a heavy page loads), and
+      // stop() waits for the loop, so an unbounded one stops even the demo's time limit.
+      const shot = await page.screenshot({ type: 'jpeg', quality: 90, animations: 'allow', caret: 'initial', timeout: 3_000 }).catch(() => undefined);
       const b = Date.now() / 1000;
-      if (!shot) continue; // mid-navigation
+      if (!shot) continue; // mid-navigation, or hung
       const file = join(dir, `${String(frames.length).padStart(6, '0')}.jpg`);
       writeFileSync(file, shot);
       frames.push({ file, t: (a + b) / 2 });
+      waiters = waiters.filter((w) => (a >= w.after ? (w.ok(), false) : true));
     }
   })();
   return {
     frames,
+    /** Resolves once a frame whose capture started after this call is in; fails after 30 s. */
+    fresh: () => {
+      const after = Date.now() / 1000;
+      return new Promise<void>((ok, no) => {
+        const timer = setTimeout(() => no(new Error('no frame was captured for 30 s: the page may be too busy to screenshot')), 30_000);
+        waiters.push({ after, ok: () => { clearTimeout(timer); ok(); } });
+      });
+    },
     stop: async () => {
       running = false;
       await loop;
@@ -207,9 +219,9 @@ async function record(run: Run, opts: { viewport?: Viewport } = {}): Promise<Rec
   const context = await browser.newContext({ ...v, baseURL: app.url, colorScheme: 'light', reducedMotion: 'no-preference' });
   const page = await context.newPage();
   page.setDefaultTimeout(10_000);
-  const demo = new Demo(page, v.hasTouch);
-  let failure: string | undefined;
   let cast: ReturnType<typeof capture> | undefined;
+  const demo = new Demo(page, v.hasTouch, () => cast?.fresh() ?? Promise.resolve());
+  let failure: string | undefined;
   let until = 0;
   try {
     const play = await loadDemo(demoFile);

@@ -13,9 +13,12 @@ export class Demo {
   readonly markers: Marker[] = [];
   private page: Page;
   private touch: boolean;
-  constructor(page: Page, touch: boolean) {
+  private fresh: () => Promise<void>;
+  /** `fresh` resolves once the recording has a frame captured after the call. */
+  constructor(page: Page, touch: boolean, fresh: () => Promise<void> = async () => {}) {
     this.page = page;
     this.touch = touch;
+    this.fresh = fresh;
   }
 
   private mark(m: Omit<Marker, 't'>) {
@@ -31,6 +34,8 @@ export class Demo {
 
   /** Starts the GIF here: call it once the first screen of the demo is up. */
   async begin() {
+    // A heavy page can stall screenshots while it loads; the GIF must not start before the frames do.
+    await this.fresh();
     const v = this.page.viewportSize()!;
     this.mark({ event: 'begin', w: v.width, h: v.height });
   }

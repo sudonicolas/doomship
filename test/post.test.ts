@@ -19,6 +19,8 @@ test('section: the GIF at 300 px, captions as alt text, the short sha and a link
   assert.match(s, /<img src="https:\/\/github\.com\/a\/b\/blob\/c0ffee\/abc1234\.gif\?raw=true" width="300" alt="Pick the days\. Say &quot;when&quot;">/);
   assert.ok(s.includes(`abc1234 · made with <a href="${doomshipUrl}">doomship</a>`));
   assert.ok(!s.includes('—'));
+  // A desktop GIF (960 px) shows at half its width too, so its screen stays readable.
+  assert.match(section({ url: 'u', captions: [], sha: 'abc1234', width: 960 }), /width="480"/);
 });
 
 test('withSection: at the top the first time, in place after that; the rest of the description untouched', () => {
