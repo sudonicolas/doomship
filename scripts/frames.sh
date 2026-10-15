@@ -43,13 +43,13 @@ for t in "$@"; do
     # frame when the screen changes, so a plain seek would show the next change instead.
     from=$(awk -v t="$t" 'BEGIN { print (t > 5 ? t - 5 : 0) }')
     # (-v fatal: -update with copied timestamps warns once per frame it overwrites.)
-    "$FFMPEG" -v fatal -ss "$from" -copyts -i "$VIDEO" -to "$t" -update 1 \
+    "$FFMPEG" -v fatal -ss "$from" -copyts -fflags +igndts -i "$VIDEO" -to "$t" -update 1 \
         -vf "select='lte(t\,$t)',$size,$label:text='$name s (frame %{pts\:flt})'" -fps_mode passthrough \
         -y "$OUT/$name.png"
     [ -f "$OUT/$name.png" ] || echo "No frame at $t s" >&2
 done
 # The last frame: seek near the end and keep overwriting until the stream runs out.
-"$FFMPEG" -v error -sseof -0.5 -i "$VIDEO" -update 1 -vf "$size,$label:text='last'" -y "$OUT/last.png"
+"$FFMPEG" -v error -sseof -0.5 -fflags +igndts -i "$VIDEO" -update 1 -vf "$size,$label:text='last'" -y "$OUT/last.png"
 
 # A contact sheet, five frames to a row, in time order.
 count=$(ls "$OUT"/*.png | wc -l | tr -d ' ')

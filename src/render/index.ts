@@ -60,6 +60,10 @@ export function render(r: Run, opts: { mp4?: boolean; splash?: boolean } = {}): 
   if (!ffmpeg) throw new Error('no ffmpeg with libass: run doomship doctor');
   const ffprobe = ffmpeg.includes('/') ? join(dirname(ffmpeg), 'ffprobe') : 'ffprobe';
   const { w, h } = videoSize(ffprobe, video);
+  // simctl's H.264 has B-frames whose decode times fall seconds behind their presentation times
+  // over a long recording; ffmpeg then trusts the decode times and the video drifts from the
+  // events. Ignoring them keeps each frame at its presentation time.
+  const input = ['-fflags', '+igndts', '-i', video];
 
   // The graph reads the fonts as fonts/, so no path in it needs quoting.
   const fontsLink = join(r.dir, 'fonts');
@@ -77,7 +81,7 @@ export function render(r: Run, opts: { mp4?: boolean; splash?: boolean } = {}): 
     writeFileSync(join(r.dir, 'render.ass'), p.ass);
     writeFileSync(join(r.dir, 'splash.ass'), p.splashAss);
     writeFileSync(join(r.dir, 'render.filter'), p.graph);
-    run(ffmpeg, ['-v', 'error', '-y', '-i', video, '-/filter_complex', 'render.filter', '-map', '[v]',
+    run(ffmpeg, ['-v', 'error', '-y', ...input, '-/filter_complex', 'render.filter', '-map', '[v]',
       '-t', p.duration.toFixed(3), '-loop', '0', gif], r.dir);
     if (statSync(gif).size <= sizeLimit) break;
   }
@@ -93,7 +97,7 @@ export function render(r: Run, opts: { mp4?: boolean; splash?: boolean } = {}): 
     writeFileSync(join(r.dir, 'render.ass'), full.ass);
     writeFileSync(join(r.dir, 'splash.ass'), full.splashAss);
     writeFileSync(join(r.dir, 'render-mp4.filter'), full.mp4Graph);
-    run(ffmpeg, ['-v', 'error', '-y', '-i', video, '-/filter_complex', 'render-mp4.filter', '-map', '[v]',
+    run(ffmpeg, ['-v', 'error', '-y', ...input, '-/filter_complex', 'render-mp4.filter', '-map', '[v]',
       '-t', full.duration.toFixed(3), '-c:v', 'libx264', '-crf', '20', '-movflags', '+faststart', mp4], r.dir);
   }
 

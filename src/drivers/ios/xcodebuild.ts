@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process';
-import { closeSync, openSync, readFileSync, statSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { closeSync, existsSync, openSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { dirname, join, relative } from 'node:path';
 import { simulatorName, findSimulators } from '../../doctor.ts';
 import { exec } from '../../exec.ts';
 import type { IosConfig } from '../../config.ts';
@@ -99,3 +99,38 @@ export function buildFailure(log: string, src: string, injectInto: string, layou
 }
 
 export const readLog = (path: string) => readFileSync(path, 'utf8');
+
+/**
+ * The bundle id of the app a UI test target drives, from an .xctestrun file (as JSON): its
+ * UITargetAppPath, then that app's Info.plist (read through `plist`, which gives it as JSON).
+ */
+export function uiTargetBundleId(xctestrun: string, products: string, target: string, plist: (file: string) => string): string | undefined {
+  type TestTarget = { BlueprintName?: string; UITargetAppPath?: string };
+  // Format 2 lists targets under TestConfigurations; format 1 keys them by name at the top level.
+  const run = JSON.parse(xctestrun) as { TestConfigurations?: { TestTargets?: TestTarget[] }[] } & Record<string, unknown>;
+  const targets = (run.TestConfigurations ?? []).flatMap((c) => c.TestTargets ?? []);
+  const app = (targets.find((t) => t.BlueprintName === target) ?? (run[target] as TestTarget | undefined))?.UITargetAppPath;
+  if (!app) return undefined;
+  const info = join(app.replace('__TESTROOT__', products), 'Info.plist');
+  if (!existsSync(info)) return undefined;
+  return (JSON.parse(plist(info)) as { CFBundleIdentifier?: string }).CFBundleIdentifier;
+}
+
+const plistJson = (file: string) => {
+  const r = exec('plutil', ['-convert', 'json', '-o', '-', file]);
+  if (!r.ok) throw new Error(`could not read ${file}: ${r.stderr.trim()}`);
+  return r.stdout;
+};
+
+/** The bundle id of the app the config's UI tests drive, from the last build in DerivedData. */
+export function appBundleId(config: IosConfig, derived: string): string | undefined {
+  const products = join(derived, 'Build', 'Products');
+  if (!existsSync(products)) return undefined;
+  const runs = readdirSync(products).filter((f) => f.endsWith('.xctestrun'))
+    .map((f) => join(products, f)).sort((a, b) => statSync(b).mtimeMs - statSync(a).mtimeMs);
+  for (const file of runs) {
+    const id = uiTargetBundleId(plistJson(file), dirname(file), config.uiTestTarget, plistJson);
+    if (id) return id;
+  }
+  return undefined;
+}

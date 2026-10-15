@@ -53,3 +53,23 @@ test('testFailure: the assertion, its line in demo.swift and the last caption re
   ].join('\n'));
   assert.match(testFailure('** TEST EXECUTE FAILED **', '/src', 'x.swift', layout), /^The demo failed without an assertion message\.\nNo caption was reached\.\nThe end of test\.log:\n\*\* TEST EXECUTE FAILED \*\*/);
 });
+
+test('the bundle id of the app a UI test target drives, from the .xctestrun', async () => {
+  const { uiTargetBundleId } = await import('../src/drivers/ios/xcodebuild.ts');
+  const { mkdtempSync, mkdirSync, writeFileSync } = await import('node:fs');
+  const { join } = await import('node:path');
+  const { tmpdir } = await import('node:os');
+  const products = mkdtempSync(join(tmpdir(), 'products-'));
+  mkdirSync(join(products, 'Debug-iphonesimulator', 'App.app'), { recursive: true });
+  const info = join(products, 'Debug-iphonesimulator', 'App.app', 'Info.plist');
+  writeFileSync(info, '{"CFBundleIdentifier":"com.example.app"}');
+  const xctestrun = JSON.stringify({ TestConfigurations: [{ TestTargets: [
+    { BlueprintName: 'KinTests' },
+    { BlueprintName: 'AppUITests', UITargetAppPath: '__TESTROOT__/Debug-iphonesimulator/App.app' },
+  ] }] });
+  const read = (await import('node:fs')).readFileSync;
+  assert.equal(uiTargetBundleId(xctestrun, products, 'AppUITests', (f) => read(f, 'utf8')), 'com.example.app');
+  assert.equal(uiTargetBundleId(xctestrun, products, 'OtherUITests', (f) => read(f, 'utf8')), undefined);
+  const formatOne = JSON.stringify({ __xctestrun_metadata__: { FormatVersion: 1 }, AppUITests: { UITargetAppPath: '__TESTROOT__/Debug-iphonesimulator/App.app' } });
+  assert.equal(uiTargetBundleId(formatOne, products, 'AppUITests', (f) => read(f, 'utf8')), 'com.example.app');
+});

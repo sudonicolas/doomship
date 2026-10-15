@@ -6,7 +6,7 @@ import { exec } from '../../exec.ts';
 import type { Run } from '../../run.ts';
 import type { Recording } from '../driver.ts';
 import { demoClass, demoMethod, injectedFor, type Layout } from './inject.ts';
-import { derivedData, quietLimit, runLogged, simulatorUdid, xcodebuildArgs } from './xcodebuild.ts';
+import { appBundleId, derivedData, quietLimit, runLogged, simulatorUdid, xcodebuildArgs } from './xcodebuild.ts';
 
 /** A helper call, at its time in the video. */
 export type Event = {
@@ -123,6 +123,10 @@ async function recordOnce(run: Run, udid: string, reboot: boolean): Promise<Reco
   for (const f of [video, events, log, join(run.dir, 'failure.txt')]) rmSync(f, { force: true });
 
   readySimulator(udid, reboot);
+  // A fresh install every time (the test run installs it again), so nothing a demo or an earlier
+  // recording saved, such as UserDefaults, carries over into this one.
+  const bundleId = appBundleId(config, derivedData(run.repoName));
+  if (bundleId) exec('xcrun', ['simctl', 'uninstall', udid, bundleId]);
   const rec = startRecording(udid, video);
   const videoStart = await rec.started;
   const args = ['test-without-building', ...xcodebuildArgs(config, run.src, derivedData(run.repoName), udid),
