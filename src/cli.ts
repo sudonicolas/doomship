@@ -2,7 +2,8 @@
 import { parseArgs } from 'node:util';
 import { existsSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { basename, join, resolve } from 'node:path';
 import { resolveChange } from './change.ts';
 import { ConfigError, loadConfig } from './config.ts';
 import { exec } from './exec.ts';
@@ -10,6 +11,7 @@ import { checkSimulator, createSimulatorArgs, formatChecks, runDoctor } from './
 import { fontsDir } from './fonts.ts';
 import { iosDriver } from './drivers/ios/index.ts';
 import { attemptsOf, recordRun, skipRun, summary } from './pipeline.ts';
+import { post, type Gh } from './post.ts';
 import { prepare } from './prepare.ts';
 import { render } from './render/index.ts';
 import { loadRun } from './run.ts';
@@ -25,6 +27,8 @@ Commands:
   render <run>              Render the recording as the PR GIF, with its poster and sidecar.
   run <repo> <change>       Prepare; then, if the run has a demo.swift, record and render it.
   skip <run> --reason "…"   Mark the change as having nothing to show (skip.json).
+  post <repo> <pr>          Put the newest GIF of the PR's head in its description, through gh.
+                            --dry-run prints the section and uploads nothing.
 
 A change is a commit, a range (a..b, or a...b from their merge-base), a branch (from where it left
 main), or --worktree for uncommitted changes.
@@ -35,6 +39,7 @@ Options:
   --mp4           render, run: an MP4 of the same cut too.
   --no-splash     render, run: no doomship splash at the start and end.
   --reason <text> skip: why nothing shows.
+  --dry-run       post: print what would change, change nothing.
   -h, --help      Show this help.`;
 
 async function main(argv: string[]): Promise<number> {
@@ -51,6 +56,7 @@ async function main(argv: string[]): Promise<number> {
         mp4: { type: 'boolean' },
         'no-splash': { type: 'boolean' },
         reason: { type: 'string' },
+        'dry-run': { type: 'boolean' },
       },
     });
   } catch (e) {
@@ -181,6 +187,22 @@ async function main(argv: string[]): Promise<number> {
         return fail(`skip: ${(e as Error).message}`);
       }
     }
+    case 'post': {
+      const [repo, pr, ...extra] = rest;
+      if (!repo || !pr || extra.length) return usageError('post needs a repo and a PR number');
+      try {
+        const dryRun = Boolean(values['dry-run']);
+        const p = post(gh, repo, basename(resolve(repo)), pr, { dryRun });
+        if (dryRun) {
+          console.log(`Would put ${tilde(p.render.gif)} in ${p.pr.url}, hosted in ${p.pr.headRepo.owner}/${p.pr.headRepo.name}:\n\n${p.section}`);
+        } else {
+          console.log(`Posted to ${p.pr.url}\n  ${p.url}`);
+        }
+        return 0;
+      } catch (e) {
+        return fail(`post: ${(e as Error).message}`);
+      }
+    }
     default:
       return usageError(`Unknown command: ${command}`);
   }
@@ -195,6 +217,13 @@ function usageError(message: string): number {
   console.error(`${message}\n\n${usage}`);
   return 64;
 }
+
+/** gh, run from doomship's own folder (never the demoed repo's), with stdin when given. */
+const gh: Gh = (args, input) => {
+  const r = spawnSync('gh', args, { encoding: 'utf8', input, maxBuffer: 64 * 1024 * 1024 });
+  if (r.error) return { ok: false, stdout: '', stderr: 'gh is not installed: brew install gh, then gh auth login' };
+  return { ok: r.status === 0, stdout: r.stdout ?? '', stderr: r.stderr ?? '' };
+};
 
 const tilde = (path: string) => (path.startsWith(homedir()) ? `~${path.slice(homedir().length)}` : path);
 

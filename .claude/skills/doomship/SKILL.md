@@ -196,4 +196,7 @@ build, record and render times (`render.json`, `attempts.jsonl`). Or the skip an
 what failed after 3 attempts.
 
 **Never post the GIF to a PR unless the person asked** for it in this request or their
-instructions say so. Posting is its own command.
+instructions say so. Posting is its own command: `node src/cli.ts post <repo> <pr> --dry-run`
+shows the section, then the same without `--dry-run` hosts the GIF on GitHub and puts it in the
+PR description. It posts the newest render of the PR's head commit, so render that change
+(`<base>..<head>`) first.
