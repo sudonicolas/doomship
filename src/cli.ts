@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { parseArgs } from 'node:util';
-import { writeFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { resolveChange } from './change.ts';
@@ -9,6 +9,7 @@ import { exec } from './exec.ts';
 import { checkSimulator, createSimulatorArgs, formatChecks, runDoctor } from './doctor.ts';
 import { fontsDir } from './fonts.ts';
 import { iosDriver } from './drivers/ios/index.ts';
+import { attemptsOf, recordRun, skipRun, summary } from './pipeline.ts';
 import { prepare } from './prepare.ts';
 import { render } from './render/index.ts';
 import { loadRun } from './run.ts';
@@ -22,6 +23,8 @@ Commands:
   record <run>              Build, then record the demo: video.mov and events.json, or failure.txt.
                             Exits 0 recorded, 1 the build or the demo failed, 2 it stalled twice.
   render <run>              Render the recording as the PR GIF, with its poster and sidecar.
+  run <repo> <change>       Prepare; then, if the run has a demo.swift, record and render it.
+  skip <run> --reason "…"   Mark the change as having nothing to show (skip.json).
 
 A change is a commit, a range (a..b, or a...b from their merge-base), a branch (from where it left
 main), or --worktree for uncommitted changes.
@@ -29,7 +32,8 @@ main), or --worktree for uncommitted changes.
 Options:
   --worktree      The change is the working tree, untracked files included.
   --config <file> The config, instead of the repo's .doomship.json.
-  --mp4           render: an MP4 of the same cut too.
+  --mp4           render, run: an MP4 of the same cut too.
+  --reason <text> skip: why nothing shows.
   -h, --help      Show this help.`;
 
 async function main(argv: string[]): Promise<number> {
@@ -44,6 +48,7 @@ async function main(argv: string[]): Promise<number> {
         worktree: { type: 'boolean' },
         config: { type: 'string' },
         mp4: { type: 'boolean' },
+        reason: { type: 'string' },
       },
     });
   } catch (e) {
@@ -108,18 +113,13 @@ async function main(argv: string[]): Promise<number> {
       if (rest.length !== 1) return usageError('record needs one run directory');
       try {
         const run = loadRun(rest[0]);
-        if (run.config.platform !== 'ios') return fail('record: only iOS for now');
-        const b = await iosDriver.prepareBuild(run);
-        if (!b.ok) return fail(`${b.failure}(build ${b.seconds.toFixed(1)} s; ${tilde(run.dir)}/failure.txt)`);
-        const started = Date.now();
-        const r = await iosDriver.record(run);
-        const seconds = (Date.now() - started) / 1000;
-        writeFileSync(join(run.dir, 'record.json'), JSON.stringify({ buildSeconds: b.seconds, recordSeconds: seconds, failed: Boolean(r.failure), stalled: Boolean(r.stalled) }, null, 2) + '\n');
-        if (r.failure) {
-          console.error(`${r.failure}(build ${b.seconds.toFixed(1)} s, record ${seconds.toFixed(1)} s; ${tilde(run.dir)}/failure.txt)`);
-          return r.stalled ? 2 : 1;
+        const a = await recordRun(run);
+        const times = `build ${a.buildSeconds.toFixed(1)} s${a.recordSeconds !== undefined ? `, record ${a.recordSeconds.toFixed(1)} s` : ''}`;
+        if (a.failure) {
+          console.error(`${a.failure}(${times}; ${tilde(run.dir)}/failure.txt)`);
+          return a.outcome === 'stalled' ? 2 : 1;
         }
-        console.log(`Recorded ${run.change.id}: build ${b.seconds.toFixed(1)} s, record ${seconds.toFixed(1)} s\n  ${tilde(r.video)}\n  ${tilde(r.events)}`);
+        console.log(`Recorded ${run.change.id}: ${times}\n  ${tilde(join(run.dir, 'video.mov'))}\n  ${tilde(join(run.dir, 'events.json'))}`);
         return 0;
       } catch (e) {
         return fail(`record: ${(e as Error).message}`);
@@ -136,6 +136,47 @@ async function main(argv: string[]): Promise<number> {
         return 0;
       } catch (e) {
         return fail(`render: ${(e as Error).message}`);
+      }
+    }
+    case 'run': {
+      const [repo, spec, ...extra] = rest;
+      if (!repo) return usageError('run needs a repo and a change');
+      if (extra.length) return usageError(`run takes a repo and one change, not: ${extra.join(' ')}`);
+      if (!spec === !values.worktree) return usageError('run needs a change, or --worktree (not both)');
+      try {
+        const p = prepare(repo, resolveChange(repo, spec), loadConfig(repo, values.config));
+        const run = loadRun(p.run);
+        if (existsSync(join(run.dir, 'skip.json'))) {
+          console.log(`Skipped ${run.change.id}: ${JSON.parse(readFileSync(join(run.dir, 'skip.json'), 'utf8')).reason}`);
+          return 0;
+        }
+        if (!existsSync(join(run.dir, 'demo.swift'))) {
+          console.log(`Prepared ${run.change.id}: ${run.change.title}\n  ${tilde(run.dir)}/context.md\n` +
+            `No demo yet: write demo.swift there and run again, or: doomship skip ${tilde(run.dir)} --reason "…"`);
+          return 0;
+        }
+        const a = await recordRun(run);
+        if (a.failure) {
+          console.error(`${a.failure}(attempt ${attemptsOf(run).length}; ${tilde(run.dir)}/failure.txt)`);
+          return a.outcome === 'stalled' ? 2 : 1;
+        }
+        const g = render(run, { mp4: values.mp4 });
+        console.log(summary(run, attemptsOf(run), g, tilde));
+        return 0;
+      } catch (e) {
+        return fail(e instanceof ConfigError ? e.message : `run: ${(e as Error).message}`);
+      }
+    }
+    case 'skip': {
+      if (rest.length !== 1) return usageError('skip needs one run directory');
+      if (!values.reason) return usageError('skip needs --reason "…": what the change does and why nothing shows');
+      try {
+        const run = loadRun(rest[0]);
+        skipRun(run, values.reason);
+        console.log(`Skipped ${run.change.id}: ${values.reason.trim()}`);
+        return 0;
+      } catch (e) {
+        return fail(`skip: ${(e as Error).message}`);
       }
     }
     default:
