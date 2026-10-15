@@ -83,7 +83,9 @@ const scaled = (n: number) => n * glyphScale;
 const mainsail = roundedPolygon([[478, 130], [478, 600], [858, 380]], 28);
 const jib = roundedPolygon([[440, 250], [440, 600], [230, 600]], 16);
 const hull = 'm 130 640 l 900 640 b 860 760 790 800 700 800 l 280 800 b 200 800 150 740 130 640';
-const sun: Point = [500, 700];
+// The sun rests with about half of it above the deck.
+const sun: Point = [500, 620];
+const sunR = 270;
 const waterline = glyph([0, 790])[1];
 
 export const ink = '#0D0F14';
@@ -91,9 +93,9 @@ export const red = '#F0302A';
 
 export const shapes: Shape[] = [
   { name: 'icon', path: squircle(500), colour: ink, opacity: 1, blur: 0 },
-  { name: 'sun glow', path: onGlyph(circle(sun, 340)), colour: '#FF3B30', opacity: 0.62, blur: scaled(220) },
-  { name: 'sun', path: onGlyph(circle(sun, 300)), colour: red, opacity: 1, blur: 0, clipBelow: waterline },
-  { name: 'sun warmth', path: onGlyph(circle([sun[0], sun[1] + 135], 210)), colour: '#FF7F0A', opacity: 0.81, blur: scaled(250), clipBelow: waterline },
+  { name: 'sun glow', path: onGlyph(circle(sun, sunR + 40)), colour: '#FF3B30', opacity: 0.62, blur: scaled(220) },
+  { name: 'sun', path: onGlyph(circle(sun, sunR)), colour: red, opacity: 1, blur: 0, clipBelow: waterline },
+  { name: 'sun warmth', path: onGlyph(circle([sun[0], sun[1] + sunR * 0.45], sunR * 0.7)), colour: '#FF7F0A', opacity: 0.81, blur: scaled(250), clipBelow: waterline },
   { name: 'mainsail', path: onGlyph(mainsail), colour: '#FFFFFF', opacity: 1, blur: 0 },
   { name: 'jib', path: onGlyph(jib), colour: '#FFFFFF', opacity: 1, blur: 0 },
   { name: 'hull', path: onGlyph(hull), colour: '#FFFFFF', opacity: 1, blur: 0 },
