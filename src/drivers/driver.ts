@@ -16,5 +16,6 @@ export type Recording = { video: string; events: string; failure?: string; stall
  */
 export interface Driver {
   prepareBuild(run: Run): Promise<Build>;
-  record(run: Run): Promise<Recording>;
+  /** `viewport` is the web driver's: a phone-slim or a desktop browser. */
+  record(run: Run, opts?: { viewport?: 'phone' | 'desktop' }): Promise<Recording>;
 }

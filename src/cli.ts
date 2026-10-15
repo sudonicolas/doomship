@@ -9,8 +9,7 @@ import { ConfigError, loadConfig } from './config.ts';
 import { exec } from './exec.ts';
 import { checkSimulator, createSimulatorArgs, formatChecks, runDoctor } from './doctor.ts';
 import { fontsDir } from './fonts.ts';
-import { iosDriver } from './drivers/ios/index.ts';
-import { attemptsOf, recordRun, skipRun, summary } from './pipeline.ts';
+import { attemptsOf, demoName, driverFor, recordRun, skipRun, summary } from './pipeline.ts';
 import { post, type Gh } from './post.ts';
 import { prepare } from './prepare.ts';
 import { render } from './render/index.ts';
@@ -21,11 +20,11 @@ const usage = `Usage: doomship <command> [options]
 Commands:
   doctor                    Check the tools doomship needs. --fix creates the "doomship" simulator.
   prepare <repo> <change>   Export the change and write its run: diff.patch, changes.json, context.md.
-  build <run>               Build the run's demo.swift; a failure is written to failure.txt.
+  build <run>               Build the run's demo (demo.swift, or demo.ts for web); a failure goes to failure.txt.
   record <run>              Build, then record the demo: video.mov and events.json, or failure.txt.
                             Exits 0 recorded, 1 the build or the demo failed, 2 it stalled twice.
   render <run>              Render the recording as the PR GIF, with its poster and sidecar.
-  run <repo> <change>       Prepare; then, if the run has a demo.swift, record and render it.
+  run <repo> <change>       Prepare; then, if the run has a demo, record and render it.
   skip <run> --reason "…"   Mark the change as having nothing to show (skip.json).
   post <repo> <pr>          Put the newest GIF of the PR's head in its description, through gh.
                             --dry-run prints the section and uploads nothing.
@@ -40,6 +39,7 @@ Options:
   --no-splash     render, run: no doomship splash at the start and end.
   --reason <text> skip: why nothing shows.
   --dry-run       post: print what would change, change nothing.
+  --viewport <v>  record, run (web): phone (390x844, the default) or desktop (1280x720).
   -h, --help      Show this help.`;
 
 async function main(argv: string[]): Promise<number> {
@@ -57,6 +57,7 @@ async function main(argv: string[]): Promise<number> {
         'no-splash': { type: 'boolean' },
         reason: { type: 'string' },
         'dry-run': { type: 'boolean' },
+        viewport: { type: 'string' },
       },
     });
   } catch (e) {
@@ -108,8 +109,7 @@ async function main(argv: string[]): Promise<number> {
       if (rest.length !== 1) return usageError('build needs one run directory');
       try {
         const run = loadRun(rest[0]);
-        if (run.config.platform !== 'ios') return fail('build: only iOS for now');
-        const b = await iosDriver.prepareBuild(run);
+        const b = await driverFor(run).prepareBuild(run);
         if (b.ok) console.log(`Built ${run.change.id} in ${b.seconds.toFixed(1)} s`);
         else console.error(`${b.failure}(${b.seconds.toFixed(1)} s; ${tilde(run.dir)}/failure.txt)`);
         return b.ok ? 0 : 1;
@@ -121,7 +121,7 @@ async function main(argv: string[]): Promise<number> {
       if (rest.length !== 1) return usageError('record needs one run directory');
       try {
         const run = loadRun(rest[0]);
-        const a = await recordRun(run);
+        const a = await recordRun(run, { viewport: viewportOf(values.viewport) });
         const times = `build ${a.buildSeconds.toFixed(1)} s${a.recordSeconds !== undefined ? `, record ${a.recordSeconds.toFixed(1)} s` : ''}`;
         if (a.failure) {
           console.error(`${a.failure}(${times}; ${tilde(run.dir)}/failure.txt)`);
@@ -158,12 +158,12 @@ async function main(argv: string[]): Promise<number> {
           console.log(`Skipped ${run.change.id}: ${JSON.parse(readFileSync(join(run.dir, 'skip.json'), 'utf8')).reason}`);
           return 0;
         }
-        if (!existsSync(join(run.dir, 'demo.swift'))) {
+        if (!existsSync(join(run.dir, demoName(run)))) {
           console.log(`Prepared ${run.change.id}: ${run.change.title}\n  ${tilde(run.dir)}/context.md\n` +
-            `No demo yet: write demo.swift there and run again, or: doomship skip ${tilde(run.dir)} --reason "…"`);
+            `No demo yet: write ${demoName(run)} there and run again, or: doomship skip ${tilde(run.dir)} --reason "…"`);
           return 0;
         }
-        const a = await recordRun(run);
+        const a = await recordRun(run, { viewport: viewportOf(values.viewport) });
         if (a.failure) {
           console.error(`${a.failure}(attempt ${attemptsOf(run).length}; ${tilde(run.dir)}/failure.txt)`);
           return a.outcome === 'stalled' ? 2 : 1;
@@ -206,6 +206,11 @@ async function main(argv: string[]): Promise<number> {
     default:
       return usageError(`Unknown command: ${command}`);
   }
+}
+
+function viewportOf(v: string | undefined): 'phone' | 'desktop' | undefined {
+  if (v === undefined || v === 'phone' || v === 'desktop') return v;
+  throw new Error(`--viewport is phone or desktop, not ${v}`);
 }
 
 function fail(message: string): number {

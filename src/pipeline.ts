@@ -1,6 +1,7 @@
 import { appendFileSync, existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { iosDriver } from './drivers/ios/index.ts';
+import { webDriver, type Viewport } from './drivers/web/index.ts';
 import type { Driver } from './drivers/driver.ts';
 import type { Rendered } from './render/index.ts';
 import type { Run } from './run.ts';
@@ -9,9 +10,11 @@ import type { Run } from './run.ts';
 export type Attempt = { buildSeconds: number; recordSeconds?: number; outcome: 'recorded' | 'build failed' | 'demo failed' | 'stalled'; failure?: string };
 
 export function driverFor(run: Run): Driver {
-  if (run.config.platform === 'ios') return iosDriver;
-  throw new Error(`no ${run.config.platform} driver yet (Phase 3)`);
+  return run.config.platform === 'ios' ? iosDriver : webDriver;
 }
+
+/** The demo's file in the run: Swift for iOS, TypeScript for web. */
+export const demoName = (run: Run) => (run.config.platform === 'ios' ? 'demo.swift' : 'demo.ts');
 
 export function attemptsOf(run: Run): Attempt[] {
   const file = join(run.dir, 'attempts.jsonl');
@@ -19,7 +22,7 @@ export function attemptsOf(run: Run): Attempt[] {
 }
 
 /** Builds and records the run's demo, logging the attempt. */
-export async function recordRun(run: Run): Promise<Attempt> {
+export async function recordRun(run: Run, opts: { viewport?: Viewport } = {}): Promise<Attempt> {
   const driver = driverFor(run);
   const b = await driver.prepareBuild(run);
   let attempt: Attempt;
@@ -27,7 +30,7 @@ export async function recordRun(run: Run): Promise<Attempt> {
     attempt = { buildSeconds: b.seconds, outcome: 'build failed', failure: b.failure };
   } else {
     const started = Date.now();
-    const r = await driver.record(run);
+    const r = await driver.record(run, opts);
     const recordSeconds = (Date.now() - started) / 1000;
     attempt = r.failure
       ? { buildSeconds: b.seconds, recordSeconds, outcome: r.stalled ? 'stalled' : 'demo failed', failure: r.failure }
@@ -41,7 +44,7 @@ export async function recordRun(run: Run): Promise<Attempt> {
 export function skipRun(run: Run, reason: string): void {
   if (!reason.trim()) throw new Error('a skip needs a reason, such as "Only the preset data model changed; nothing on screen."');
   writeFileSync(join(run.dir, 'skip.json'), JSON.stringify({ change: run.change.spec, title: run.change.title, reason: reason.trim() }, null, 2) + '\n');
-  rmSync(join(run.dir, 'demo.swift'), { force: true });
+  rmSync(join(run.dir, demoName(run)), { force: true });
 }
 
 const s = (n: number | undefined) => (n === undefined ? '-' : `${n.toFixed(1)} s`);

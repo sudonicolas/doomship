@@ -13,5 +13,8 @@
   "scripts": {
     "test": "node --test"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "playwright-core": "1.63.0"
+  }
 }

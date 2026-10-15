@@ -59,7 +59,8 @@ function exportTree(repo: string, change: Change, dest: string): void {
  */
 function sync(from: string, to: string): void {
   mkdirSync(to, { recursive: true });
-  const r = spawnSync('rsync', ['-rlp', '--checksum', '--delete', `${from}/`, `${to}/`], { encoding: 'utf8' });
+  // The web driver installs dependencies into the export; --delete leaves an excluded folder alone.
+  const r = spawnSync('rsync', ['-rlp', '--checksum', '--delete', '--exclude', '/node_modules/', `${from}/`, `${to}/`], { encoding: 'utf8' });
   if (r.status !== 0) throw new Error(`rsync failed: ${r.stderr.trim()}`);
 }
 

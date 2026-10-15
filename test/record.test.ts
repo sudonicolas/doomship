@@ -73,3 +73,18 @@ test('the bundle id of the app a UI test target drives, from the .xctestrun', as
   const formatOne = JSON.stringify({ __xctestrun_metadata__: { FormatVersion: 1 }, AppUITests: { UITargetAppPath: '__TESTROOT__/Debug-iphonesimulator/App.app' } });
   assert.equal(uiTargetBundleId(formatOne, products, 'AppUITests', (f) => read(f, 'utf8')), 'com.example.app');
 });
+
+test('a web demo failure points at its demo.ts line, with the code and the last caption', async () => {
+  const { demoFailure } = await import('../src/drivers/web/index.ts');
+  const { mkdtempSync, writeFileSync } = await import('node:fs');
+  const { join } = await import('node:path');
+  const { tmpdir } = await import('node:os');
+  const file = join(mkdtempSync(join(tmpdir(), 'demo-')), 'demo.ts');
+  writeFileSync(file, 'export default async function (page, demo) {\n  await demo.caption("Open it");\n  await demo.tap(page.locator(".nope"));\n}\n');
+  const e = new Error('locator.scrollIntoViewIfNeeded: Timeout 10000ms exceeded.\nCall log:\n  - waiting for locator(\'.nope\')');
+  e.stack = `Error: x\n    at Demo.box (/x/src/drivers/web/demo.ts:26:19)\n    at default (${file}?at=1:3:14)`;
+  const f = demoFailure(e, file, ['Open it']);
+  assert.match(f, /^Demo failed: demo\.ts:3: locator\.scrollIntoViewIfNeeded: Timeout/);
+  assert.match(f, /\n3 \|   await demo\.tap\(page\.locator\("\.nope"\)\);/);
+  assert.match(f, /The last caption reached: "Open it"\./);
+});
