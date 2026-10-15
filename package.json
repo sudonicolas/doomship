@@ -1,0 +1,17 @@
+{
+  "name": "doomship",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Turn a change into a short vertical video of exactly that change.",
+  "type": "module",
+  "bin": {
+    "doomship": "src/cli.ts"
+  },
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "license": "MIT"
+}
