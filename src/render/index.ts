@@ -48,7 +48,8 @@ export function outputName(r: Run, date = localDate()): string {
 }
 
 /** Renders the run's recording into the PR GIF, its poster and sidecar (and an MP4 when asked). */
-export function render(r: Run, opts: { mp4?: boolean } = {}): Rendered {
+export function render(r: Run, opts: { mp4?: boolean; splash?: boolean } = {}): Rendered {
+  const splash = opts.splash ?? true;
   const started = Date.now();
   const video = join(r.dir, 'video.mov');
   const eventsFile = join(r.dir, 'events.json');
@@ -72,8 +73,9 @@ export function render(r: Run, opts: { mp4?: boolean } = {}): Rendered {
 
   let p, step;
   for (step of ladder) {
-    p = plan(events, w, h, { ...step, accent: r.config.accent });
+    p = plan(events, w, h, { ...step, accent: r.config.accent, splash });
     writeFileSync(join(r.dir, 'render.ass'), p.ass);
+    writeFileSync(join(r.dir, 'splash.ass'), p.splashAss);
     writeFileSync(join(r.dir, 'render.filter'), p.graph);
     run(ffmpeg, ['-v', 'error', '-y', '-i', video, '-/filter_complex', 'render.filter', '-map', '[v]',
       '-t', p.duration.toFixed(3), '-loop', '0', gif], r.dir);
@@ -81,13 +83,15 @@ export function render(r: Run, opts: { mp4?: boolean } = {}): Rendered {
   }
   const bytes = statSync(gif).size;
   if (bytes > sizeLimit) throw new Error(`the GIF is ${(bytes / 1048576).toFixed(1)} MB even at ${step!.width} px and ${step!.fps} fps: shorten the demo`);
-  // The poster: the last frame, the result.
-  run(ffmpeg, ['-v', 'error', '-y', '-sseof', '-0.2', '-i', gif, '-update', '1', png], r.dir);
+  // The poster: the result, the last frame before the end splash.
+  run(ffmpeg, ['-v', 'error', '-y', '-ss', Math.max(0, p!.flowEnd - 0.1).toFixed(3), '-i', gif, '-frames:v', '1', '-update', '1', png], r.dir);
 
   let mp4: string | undefined;
   if (opts.mp4) {
     mp4 = join(out, `${name}.mp4`);
-    const full = plan(events, w, h, { ...ladder[0], accent: r.config.accent });
+    const full = plan(events, w, h, { ...ladder[0], accent: r.config.accent, splash });
+    writeFileSync(join(r.dir, 'render.ass'), full.ass);
+    writeFileSync(join(r.dir, 'splash.ass'), full.splashAss);
     writeFileSync(join(r.dir, 'render-mp4.filter'), full.mp4Graph);
     run(ffmpeg, ['-v', 'error', '-y', '-i', video, '-/filter_complex', 'render-mp4.filter', '-map', '[v]',
       '-t', full.duration.toFixed(3), '-c:v', 'libx264', '-crf', '20', '-movflags', '+faststart', mp4], r.dir);

@@ -33,6 +33,7 @@ Options:
   --worktree      The change is the working tree, untracked files included.
   --config <file> The config, instead of the repo's .doomship.json.
   --mp4           render, run: an MP4 of the same cut too.
+  --no-splash     render, run: no doomship splash at the start and end.
   --reason <text> skip: why nothing shows.
   -h, --help      Show this help.`;
 
@@ -48,6 +49,7 @@ async function main(argv: string[]): Promise<number> {
         worktree: { type: 'boolean' },
         config: { type: 'string' },
         mp4: { type: 'boolean' },
+        'no-splash': { type: 'boolean' },
         reason: { type: 'string' },
       },
     });
@@ -128,7 +130,7 @@ async function main(argv: string[]): Promise<number> {
     case 'render': {
       if (rest.length !== 1) return usageError('render needs one run directory');
       try {
-        const g = render(loadRun(rest[0]), { mp4: values.mp4 });
+        const g = render(loadRun(rest[0]), { mp4: values.mp4, splash: !values['no-splash'] });
         console.log([
           `Rendered in ${g.seconds.toFixed(1)} s: ${g.duration.toFixed(1)} s, ${(g.bytes / 1048576).toFixed(1)} MB, ${g.width}×${g.height} at ${g.fps} fps`,
           `  ${tilde(g.gif)}`, `  ${tilde(g.png)}`, `  ${tilde(g.json)}`, ...(g.mp4 ? [`  ${tilde(g.mp4)}`] : []),
@@ -160,7 +162,7 @@ async function main(argv: string[]): Promise<number> {
           console.error(`${a.failure}(attempt ${attemptsOf(run).length}; ${tilde(run.dir)}/failure.txt)`);
           return a.outcome === 'stalled' ? 2 : 1;
         }
-        const g = render(run, { mp4: values.mp4 });
+        const g = render(run, { mp4: values.mp4, splash: !values['no-splash'] });
         console.log(summary(run, attemptsOf(run), g, tilde));
         return 0;
       } catch (e) {

@@ -6,7 +6,7 @@ import type { Events } from '../src/drivers/ios/record.ts';
 import { captionsOf, mapTime, plan, segmentsOf } from '../src/render/plan.ts';
 
 const here = (p: string) => fileURLToPath(new URL(p, import.meta.url));
-const options = { width: 600, fps: 15, accent: '#5856D6' };
+const options = { width: 600, fps: 15, accent: '#5856D6', splash: false };
 /** The iPhone 17 recording size, 3 px per point. */
 const W = 1206, H = 2622;
 
@@ -97,4 +97,32 @@ test('golden: the synthetic demo', () => {
   const p = plan(synthetic, W, H, options);
   golden('synthetic.ass', p.ass);
   golden('synthetic.filter', p.graph);
+});
+
+test('the splash: the flow starts after it, the end splash follows the result, and the poster is the result', () => {
+  const p = plan(synthetic, W, H, { ...options, splash: true });
+  const bare = plan(synthetic, W, H, options);
+  assert.equal(p.flowEnd.toFixed(3), (bare.duration + 1).toFixed(3));
+  assert.equal(p.duration.toFixed(3), (bare.duration + 3).toFixed(3));
+  // Captions are shifted by the start splash; the first is there from 0, under it; the last lasts to the end.
+  assert.deepEqual(p.captions.map((c) => [Number(c.start.toFixed(3)), Number(c.end.toFixed(3))]), [[0, 2.7], [2.7, 7.625], [7.625, 11.725]]);
+  // Spotlights and taps move with the flow.
+  assert.equal((p.spotlights[0].a - bare.spotlights[0].a).toFixed(3), '1.000');
+  // The first frame is held for the start splash, the last for the end one; blur and logo only while the splash is on.
+  assert.match(p.graph, /\[p0\]trim=start=1\.000:end=4\.200,setpts=\(PTS-STARTPTS\)\/1,tpad=start_mode=clone:start=30\[s0\]/);
+  assert.match(p.graph, /setpts=\(PTS-STARTPTS\)\/1,tpad=stop_mode=clone:stop=60\[s2\]/);
+  assert.match(p.graph, /enable='not\(between\(t,1\.000,9\.725\)\)'/);
+  assert.match(p.graph, /subtitles=render\.ass:fontsdir=fonts,split=2\[clear\]\[dim\];.*subtitles=splash\.ass:fontsdir=fonts,fps=15/s);
+  // The start splash is finished and fades out; the end splash builds and holds to the end.
+  assert.match(p.splashAss, /^Dialogue: 20,0:00:00\.00,0:00:01\.00,Wordmark,.*\\fad\(0,300\)\}doomship$/m);
+  assert.match(p.splashAss, /^Dialogue: 20,0:00:10\.03,0:00:11\.73,Wordmark,.*\\move\(/m);
+  assert.equal(bare.splashAss, '');
+});
+
+test('golden: the spike recording with the splash', () => {
+  const events = JSON.parse(readFileSync(here('fixtures/spike-89cd1d6.events.json'), 'utf8')) as Events;
+  const p = plan(events, W, H, { ...options, splash: true });
+  assert.equal(p.duration.toFixed(3), '14.102');
+  golden('spike-89cd1d6.splash.ass', p.splashAss);
+  golden('spike-89cd1d6.splash.filter', p.graph);
 });
