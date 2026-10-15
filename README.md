@@ -102,7 +102,8 @@ its own command, never a side effect.
 
 ## Get started
 
-You need macOS, [Node](https://nodejs.org) 22.18 or later, and ffmpeg built with libass
+doomship is free to run: every tool it uses is free, it needs no API key, and posting uses only
+a free GitHub account. You need macOS, [Node](https://nodejs.org) 22.18 or later, and ffmpeg built with libass
 (Homebrew's plain `ffmpeg` isn't):
 
 ```sh
