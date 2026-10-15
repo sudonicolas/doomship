@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import { parseArgs } from 'node:util';
+import { writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
+import { join } from 'node:path';
 import { resolveChange } from './change.ts';
 import { ConfigError, loadConfig } from './config.ts';
 import { exec } from './exec.ts';
@@ -16,6 +18,8 @@ Commands:
   doctor                    Check the tools doomship needs. --fix creates the "doomship" simulator.
   prepare <repo> <change>   Export the change and write its run: diff.patch, changes.json, context.md.
   build <run>               Build the run's demo.swift; a failure is written to failure.txt.
+  record <run>              Build, then record the demo: video.mov and events.json, or failure.txt.
+                            Exits 0 recorded, 1 the build or the demo failed, 2 it stalled twice.
 
 A change is a commit, a range (a..b, or a...b from their merge-base), a branch (from where it left
 main), or --worktree for uncommitted changes.
@@ -94,6 +98,27 @@ async function main(argv: string[]): Promise<number> {
         return b.ok ? 0 : 1;
       } catch (e) {
         return fail(`build: ${(e as Error).message}`);
+      }
+    }
+    case 'record': {
+      if (rest.length !== 1) return usageError('record needs one run directory');
+      try {
+        const run = loadRun(rest[0]);
+        if (run.config.platform !== 'ios') return fail('record: only iOS for now');
+        const b = await iosDriver.prepareBuild(run);
+        if (!b.ok) return fail(`${b.failure}(build ${b.seconds.toFixed(1)} s; ${tilde(run.dir)}/failure.txt)`);
+        const started = Date.now();
+        const r = await iosDriver.record(run);
+        const seconds = (Date.now() - started) / 1000;
+        writeFileSync(join(run.dir, 'record.json'), JSON.stringify({ buildSeconds: b.seconds, recordSeconds: seconds, failed: Boolean(r.failure), stalled: Boolean(r.stalled) }, null, 2) + '\n');
+        if (r.failure) {
+          console.error(`${r.failure}(build ${b.seconds.toFixed(1)} s, record ${seconds.toFixed(1)} s; ${tilde(run.dir)}/failure.txt)`);
+          return r.stalled ? 2 : 1;
+        }
+        console.log(`Recorded ${run.change.id}: build ${b.seconds.toFixed(1)} s, record ${seconds.toFixed(1)} s\n  ${tilde(r.video)}\n  ${tilde(r.events)}`);
+        return 0;
+      } catch (e) {
+        return fail(`record: ${(e as Error).message}`);
       }
     }
     default:

@@ -44,6 +44,14 @@ export function injected(original: string, helper: string, demo: string): { text
  * already has these contents, so an unchanged demo doesn't rebuild.
  */
 export function inject(run: Run): { path: string; layout: Layout; changed: boolean } {
+  const { path, text, layout } = injectedFor(run);
+  const changed = !existsSync(path) || readFileSync(path, 'utf8') !== text;
+  if (changed) writeFileSync(path, text);
+  return { path, layout, changed };
+}
+
+/** What inject writes for the run, and where; without writing it. */
+export function injectedFor(run: Run): { path: string; text: string; layout: Layout } {
   const config = run.config as IosConfig;
   const demoFile = join(run.dir, 'demo.swift');
   if (!existsSync(demoFile)) throw new Error(`${demoFile}: no demo yet; write one (a ${demoClass} XCTestCase with ${demoMethod}) or skip`);
@@ -52,8 +60,5 @@ export function inject(run: Run): { path: string; layout: Layout; changed: boole
     throw new Error(`${demoFile}: needs "final class ${demoClass}: XCTestCase" with "func ${demoMethod}()", which is what gets run`);
   }
   const { text, layout } = injected(originalSource(run, config.injectInto), readFileSync(helperFile, 'utf8'), demo);
-  const path = join(run.src, config.injectInto);
-  const changed = !existsSync(path) || readFileSync(path, 'utf8') !== text;
-  if (changed) writeFileSync(path, text);
-  return { path, layout, changed };
+  return { path: join(run.src, config.injectInto), text, layout };
 }

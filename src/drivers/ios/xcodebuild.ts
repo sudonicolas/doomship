@@ -4,6 +4,7 @@ import { join, relative } from 'node:path';
 import { simulatorName, findSimulators } from '../../doctor.ts';
 import { exec } from '../../exec.ts';
 import type { IosConfig } from '../../config.ts';
+import { repoCache } from '../../paths.ts';
 import type { Layout } from './inject.ts';
 
 /** xcodebuild can sit silent forever after the work is done, so a quiet log means it's stuck. */
@@ -43,6 +44,9 @@ export function simulatorUdid(): string {
   if (found.length !== 1) throw new Error(`need exactly one simulator named "${simulatorName}", found ${found.length}: run doomship doctor`);
   return found[0].udid;
 }
+
+/** Build products live in the cache, per repo, so builds stay incremental and never touch Xcode's shared folder. */
+export const derivedData = (repoName: string) => join(repoCache(repoName), 'DerivedData');
 
 /** The arguments every xcodebuild call shares: the project, scheme, simulator and the cache's DerivedData. */
 export function xcodebuildArgs(config: IosConfig, src: string, derivedData: string, udid: string): string[] {
