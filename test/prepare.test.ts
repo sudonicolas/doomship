@@ -51,6 +51,8 @@ test('swiftStrings: identifiers and visible strings, once each, comments skipped
     'Toggle("Hourly \\"reset\\"", isOn: $on)',
     'Stepper("Age \\(age)", value: $age)',
     'myText("nope")',
+    'Text(today.map { "Today: \\($0.summary)" } ?? "Ten seconds: mood and conditions")',
+    'let key = "sessionLength"; print("not shown on screen")',
   ].join('\n');
   assert.deepEqual(swiftStrings(src).map((f) => [f.kind, f.value, f.line]), [
     ['Text', 'Training days', 1],
@@ -58,6 +60,8 @@ test('swiftStrings: identifiers and visible strings, once each, comments skipped
     ['Button', 'Save', 4],
     ['Toggle', 'Hourly \\"reset\\"', 5],
     ['Stepper', 'Age \\(age)', 6],
+    ['String', 'Today: \\($0.summary)', 8],
+    ['String', 'Ten seconds: mood and conditions', 8],
   ]);
 });
 

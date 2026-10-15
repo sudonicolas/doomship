@@ -24,7 +24,8 @@ attempt at a change already run before, delete that run directory first.
 ## 2. Read and decide
 
 Read the run's `context.md` whole: the commit messages, the changed UI files, their identifiers
-and visible strings, the UI test file the demo goes into, and the config's notes. Read
+and visible strings (a `String` entry is text found outside a view's first argument, such as
+after `??`; "(new)" marks what the change added), the UI test file the demo goes into, and the config's notes. Read
 `diff.patch` when you need the exact change.
 
 **Skip** when nothing a user can see changed: a data model, a refactor, tests, docs, build
@@ -73,7 +74,7 @@ The helper (`resources/ios/Doomship.swift`):
 | `demo.begin()` | The GIF starts here. Call it once the first screen of the demo is up. |
 | `demo.caption("…")` | Shows the text in the band above the screen until the next caption. |
 | `demo.tap(element)` | Taps the element's centre and draws a ring where the touch lands. Use it for the taps that are the change; for the way there use plain `element.tap()`, which the GIF speeds through. |
-| `demo.show(element)` | Zooms in on a new or changed element and outlines it, for 1.5 s. Use it on what the change added: the new button, row or toggle. |
+| `demo.show(element)` | Zooms in on a new or changed element and outlines it, for 1.5 s. Use it on what the change added: the new button, row or toggle. A compact element zooms up to 2.2x; a full-width row only 1.2x, so point at the smallest element that is the change. |
 | `demo.hold(seconds)` | Keeps the screen still so it can be read. |
 | `demo.end()` | The GIF ends here. Hold on the result first (1.5 s). |
 
@@ -83,7 +84,9 @@ Rules:
   happen, end on the result. Unchanged screens appear only as the way there.
 - **Wait, don't sleep.** After a tap that opens a screen, `XCTAssertTrue(x.waitForExistence(timeout: 5))`
   on something on the new screen before the next step. Waits are sped up in the GIF.
-- **2 to 5 captions**, one per step. A caption right after a tap that opened a screen (within
+- **1 to 5 captions**, one per step; one is right for a one-line change. Each should stay up at
+  least a second: don't caption a step that's over instantly ("Redeem it"), fold it into the
+  caption of what it shows ("Redeem, and the account is a coach"). A caption right after a tap that opened a screen (within
   1.5 s) appears as that screen slides in, so it should describe the new screen. A caption before
   a tap describes what's about to be done.
 - **5 to 20 seconds** of GIF, before the splash. Stretches with no `demo` call for more than

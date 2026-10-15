@@ -8,7 +8,16 @@ const patterns: [string, RegExp][] = [
   'confirmationDialog',
 ].map((name) => [name, new RegExp(`(?:^|[^\\w.])\\.?${name}\\(\\s*${literal}`, 'g')]);
 
-/** The identifiers and visible strings in Swift source, in order, each once per kind. */
+const anyLiteral = new RegExp(literal, 'g');
+/** Words with a space: text a user might read, not a key such as "goal". */
+const prose = /[A-Za-z]\S*[^\S\n]+\S/;
+/** Lines whose strings go to a log, not the screen. */
+const notShown = /\b(?:print|debugPrint|fatalError|assert|assertionFailure|precondition|preconditionFailure|Logger|logger|log)\b/;
+
+/**
+ * The identifiers and visible strings in Swift source, in order, each once per kind. Other prose
+ * on a line (after `??`, in a ternary, in a helper's argument) is listed as a plain String.
+ */
 export function swiftStrings(source: string): Found[] {
   const found: Found[] = [];
   const seen = new Set<string>();
@@ -17,6 +26,12 @@ export function swiftStrings(source: string): Found[] {
     const hits: (Found & { at: number })[] = [];
     for (const [kind, re] of patterns) {
       for (const m of text.matchAll(re)) hits.push({ kind, value: m[1], line: i + 1, at: m.index });
+    }
+    if (!notShown.test(text)) {
+      const taken = new Set(hits.map((h) => h.value));
+      for (const m of text.matchAll(anyLiteral)) {
+        if (!taken.has(m[1]) && prose.test(m[1])) hits.push({ kind: 'String', value: m[1], line: i + 1, at: m.index });
+      }
     }
     for (const { at, ...hit } of hits.sort((a, b) => a.at - b.at)) {
       const key = `${hit.kind}\0${hit.value}`;
