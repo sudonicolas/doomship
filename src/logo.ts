@@ -83,7 +83,7 @@ const scaled = (n: number) => n * glyphScale;
 const mainsail = roundedPolygon([[478, 130], [478, 600], [858, 380]], 28);
 const jib = roundedPolygon([[440, 250], [440, 600], [230, 600]], 16);
 const hull = 'm 130 640 l 900 640 b 860 760 790 800 700 800 l 280 800 b 200 800 150 740 130 640';
-const sun: Point = [560, 700];
+const sun: Point = [500, 700];
 const waterline = glyph([0, 790])[1];
 
 export const ink = '#0D0F14';
