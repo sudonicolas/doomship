@@ -81,17 +81,23 @@ function messagesOf(repo: string, change: Change): { sha: string; message: strin
   return change.commits.map(({ sha }) => ({ sha, message: gitOut(repo, ['log', '-1', '--format=%B', sha]) }));
 }
 
+/** Exports the change's tree into the repo's stable src/ and returns its path. */
+export function syncSource(repo: string, change: Change): string {
+  const repoName = basename(repo);
+  const src = srcDir(repoName);
+  const tmp = join(repoCache(repoName), 'export.tmp');
+  exportTree(repo, change, tmp);
+  sync(tmp, src);
+  rmSync(tmp, { recursive: true, force: true });
+  return src;
+}
+
 /** Exports the change into src/ and writes the run directory: run.json, diff.patch, changes.json, context.md. */
 export function prepare(repoArg: string, change: Change, config: Config): Prepared {
   const repo = gitOut(repoArg, ['rev-parse', '--show-toplevel']);
   const repoName = basename(repo);
-  const src = srcDir(repoName);
   const run = runDir(repoName, change.id);
-  const tmp = join(repoCache(repoName), 'export.tmp');
-
-  exportTree(repo, change, tmp);
-  sync(tmp, src);
-  rmSync(tmp, { recursive: true, force: true });
+  const src = syncSource(repo, change);
 
   const patch = patchOf(repo, change);
   const files = parsePatch(patch).map((f) => ({ ...f, area: areaOf(f.path, config.areas) }));

@@ -6,13 +6,16 @@ import { ConfigError, loadConfig } from './config.ts';
 import { exec } from './exec.ts';
 import { checkSimulator, createSimulatorArgs, formatChecks, runDoctor } from './doctor.ts';
 import { fontsDir } from './fonts.ts';
+import { iosDriver } from './drivers/ios/index.ts';
 import { prepare } from './prepare.ts';
+import { loadRun } from './run.ts';
 
 const usage = `Usage: doomship <command> [options]
 
 Commands:
   doctor                    Check the tools doomship needs. --fix creates the "doomship" simulator.
   prepare <repo> <change>   Export the change and write its run: diff.patch, changes.json, context.md.
+  build <run>               Build the run's demo.swift; a failure is written to failure.txt.
 
 A change is a commit, a range (a..b, or a...b from their merge-base), a branch (from where it left
 main), or --worktree for uncommitted changes.
@@ -22,7 +25,7 @@ Options:
   --config <file> The config, instead of the repo's .doomship.json.
   -h, --help      Show this help.`;
 
-function main(argv: string[]): number {
+async function main(argv: string[]): Promise<number> {
   let parsed;
   try {
     parsed = parseArgs({
@@ -80,9 +83,27 @@ function main(argv: string[]): number {
         return 1;
       }
     }
+    case 'build': {
+      if (rest.length !== 1) return usageError('build needs one run directory');
+      try {
+        const run = loadRun(rest[0]);
+        if (run.config.platform !== 'ios') return fail('build: only iOS for now');
+        const b = await iosDriver.prepareBuild(run);
+        if (b.ok) console.log(`Built ${run.change.id} in ${b.seconds.toFixed(1)} s`);
+        else console.error(`${b.failure}(${b.seconds.toFixed(1)} s; ${tilde(run.dir)}/failure.txt)`);
+        return b.ok ? 0 : 1;
+      } catch (e) {
+        return fail(`build: ${(e as Error).message}`);
+      }
+    }
     default:
       return usageError(`Unknown command: ${command}`);
   }
+}
+
+function fail(message: string): number {
+  console.error(message);
+  return 1;
 }
 
 function usageError(message: string): number {
@@ -92,4 +113,4 @@ function usageError(message: string): number {
 
 const tilde = (path: string) => (path.startsWith(homedir()) ? `~${path.slice(homedir().length)}` : path);
 
-process.exitCode = main(process.argv.slice(2));
+main(process.argv.slice(2)).then((code) => (process.exitCode = code));
