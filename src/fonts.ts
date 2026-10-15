@@ -1,6 +1,6 @@
 import { fileURLToPath } from 'node:url';
 
-/** TikTok Sans v4.000, the 36pt (display) optical size, static cuts. Family name "TikTok Sans". */
+/** Inter 4.1 ExtraBold, the static cut (libass matches it as "Inter ExtraBold"). */
 export const fontsDir = fileURLToPath(new URL('../resources/fonts/', import.meta.url));
-export const fontFiles = ['TikTokSans36pt-Bold.ttf', 'TikTokSans36pt-Black.ttf'];
+export const fontFiles = ['Inter-ExtraBold.ttf'];
 export const fontLicense = 'OFL.txt';

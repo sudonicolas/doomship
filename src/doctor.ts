@@ -71,12 +71,12 @@ export function checkFonts(dir: string): Check {
   if (!existsSync(join(dir, fontLicense))) problems.push(`${fontLicense} missing`);
   return problems.length
     ? {
-        name: 'TikTok Sans',
+        name: 'Inter',
         ok: false,
         detail: problems.join('; '),
         fix: 'Restore resources/fonts/ from git: git checkout -- resources/fonts',
       }
-    : { name: 'TikTok Sans', ok: true, detail: fontFiles.join(', ') };
+    : { name: 'Inter', ok: true, detail: fontFiles.join(', ') };
 }
 
 type SimDevice = { name: string; udid: string; state: string; isAvailable?: boolean };

@@ -71,12 +71,13 @@ test('fonts: the vendored files pass', () => {
 
 test('fonts: a missing file and a non-font file are reported', () => {
   const dir = mkdtempSync(join(tmpdir(), 'doomship-fonts-'));
-  writeFileSync(join(dir, 'TikTokSans36pt-Bold.ttf'), 'not a font');
-  const check = checkFonts(dir);
+  writeFileSync(join(dir, 'Inter-ExtraBold.ttf'), 'not a font');
+  let check = checkFonts(dir);
   assert.equal(check.ok, false);
-  assert.match(check.detail, /TikTokSans36pt-Bold\.ttf is not a TrueType font/);
-  assert.match(check.detail, /TikTokSans36pt-Black\.ttf missing/);
+  assert.match(check.detail, /Inter-ExtraBold\.ttf is not a TrueType font/);
   assert.match(check.detail, /OFL\.txt missing/);
+  check = checkFonts(mkdtempSync(join(tmpdir(), 'doomship-fonts-')));
+  assert.match(check.detail, /Inter-ExtraBold\.ttf missing/);
 });
 
 const devices = (list: Record<string, object[]>) => JSON.stringify({ devices: list });

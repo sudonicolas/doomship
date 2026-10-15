@@ -32,7 +32,7 @@ if [ $# -eq 0 ]; then
     set -- $(awk -v d="$DURATION" 'BEGIN { for (t = 0; t < d; t += 1) printf "%g ", t }')
 fi
 
-FONT="$(cd "$(dirname "$0")/.." && pwd)/resources/fonts/TikTokSans36pt-Bold.ttf"
+FONT="$(cd "$(dirname "$0")/.." && pwd)/resources/fonts/Inter-ExtraBold.ttf"
 size="scale=iw:ih"
 [ "$WIDTH" != 0 ] && size="scale=$WIDTH:-2"
 # Each frame is labelled with the time asked for and the time of the frame actually shown.

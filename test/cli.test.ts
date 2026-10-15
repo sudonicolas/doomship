@@ -29,7 +29,7 @@ test('an unknown command or option is a usage error', () => {
 test('doctor prints one line per check and a summary', () => {
   const r = run('doctor');
   assert.ok(r.status === 0 || r.status === 1, `exit ${r.status}: ${r.stderr}`);
-  for (const name of ['Node', 'xcodebuild', 'xcrun simctl', 'ffmpeg with libass', 'TikTok Sans', 'simulator "doomship"']) {
+  for (const name of ['Node', 'xcodebuild', 'xcrun simctl', 'ffmpeg with libass', 'Inter', 'simulator "doomship"']) {
     assert.match(r.stdout, new RegExp(`^[✓✗] ${name}:`, 'm'));
   }
   assert.match(r.stdout, /(All checks passed\.|\d+ of 6 checks failed\.)$/m);
