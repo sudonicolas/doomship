@@ -13,6 +13,12 @@ import { plan } from './plan.ts';
 /** GitHub shows images up to 10 MB; this leaves room. */
 export const sizeLimit = 9.5 * 1024 * 1024;
 /** Tried in order until the GIF fits: the look first, then fewer frames, then narrower. */
+export const landscapeLadder = [
+  { width: 960, fps: 15 },
+  { width: 960, fps: 12 },
+  { width: 800, fps: 12 },
+  { width: 640, fps: 12 },
+];
 export const ladder = [
   { width: 600, fps: 15 },
   { width: 600, fps: 12 },
@@ -42,9 +48,9 @@ const localDate = (d = new Date()) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 /** The output's name: <date>-<sha>-<slug>. */
-export function outputName(r: Run, date = localDate()): string {
+export function outputName(r: Run, date = localDate(), viewport?: string): string {
   const sha = r.change.headCommit.slice(0, 7) + (r.change.head === 'worktree' ? '-worktree' : '');
-  return `${date}-${sha}-${slug(r.change.title)}`;
+  return `${date}-${sha}-${slug(r.change.title)}${viewport === 'desktop' ? '-desktop' : ''}`;
 }
 
 /** Renders the run's recording into the PR GIF, its poster and sidecar (and an MP4 when asked). */
@@ -54,7 +60,7 @@ export function render(r: Run, opts: { mp4?: boolean; splash?: boolean } = {}): 
   const video = join(r.dir, 'video.mov');
   const eventsFile = join(r.dir, 'events.json');
   if (!existsSync(video) || !existsSync(eventsFile)) throw new Error(`${r.dir}: no recording yet (video.mov and events.json); run doomship record`);
-  const events = JSON.parse(readFileSync(eventsFile, 'utf8')) as Events;
+  const events = JSON.parse(readFileSync(eventsFile, 'utf8')) as Events & { viewport?: string };
 
   const ffmpeg = findFfmpeg(exec, process.env).path;
   if (!ffmpeg) throw new Error('no ffmpeg with libass: run doomship doctor');
@@ -72,11 +78,12 @@ export function render(r: Run, opts: { mp4?: boolean; splash?: boolean } = {}): 
 
   const out = moviesDir(r.repoName);
   mkdirSync(out, { recursive: true });
-  const name = outputName(r);
+  const name = outputName(r, undefined, events.viewport);
+  const steps = w > h ? landscapeLadder : ladder;
   const gif = join(out, `${name}.gif`), png = join(out, `${name}.png`), json = join(out, `${name}.json`);
 
   let p, step;
-  for (step of ladder) {
+  for (step of steps) {
     p = plan(events, w, h, { ...step, accent: r.config.accent, splash });
     writeFileSync(join(r.dir, 'render.ass'), p.ass);
     writeFileSync(join(r.dir, 'splash.ass'), p.splashAss);
@@ -93,7 +100,7 @@ export function render(r: Run, opts: { mp4?: boolean; splash?: boolean } = {}): 
   let mp4: string | undefined;
   if (opts.mp4) {
     mp4 = join(out, `${name}.mp4`);
-    const full = plan(events, w, h, { ...ladder[0], accent: r.config.accent, splash });
+    const full = plan(events, w, h, { ...steps[0], accent: r.config.accent, splash });
     writeFileSync(join(r.dir, 'render.ass'), full.ass);
     writeFileSync(join(r.dir, 'splash.ass'), full.splashAss);
     writeFileSync(join(r.dir, 'render-mp4.filter'), full.mp4Graph);

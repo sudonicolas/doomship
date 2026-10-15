@@ -5,7 +5,7 @@ import type { Event, Events } from '../drivers/ios/record.ts';
 import { assColour, shapes } from '../logo.ts';
 
 export type RenderOptions = {
-  /** The GIF's width; shown at half this in a PR. Every size was tuned at 600 and scales with it. */
+  /** The GIF's width; shown at half this in a PR. Sizes were tuned at 600 (a phone) and scale with it. */
   width: number;
   fps: number;
   /** The band's colour, #RRGGBB. */
@@ -123,7 +123,9 @@ export function plan(events: Events, srcW: number, srcH: number, o: RenderOption
   const outW = o.width;
   const scale = outW / srcW;
   const screenH = 2 * Math.round((srcH * scale) / 2);
-  const u = outW / 600;
+  // Every size was tuned on a 600 px wide phone screen. A landscape screen scales by its height
+  // instead (three quarters of it stands in for the width), so its band doesn't swamp it.
+  const u = Math.min(outW, screenH * 0.75) / 600;
   const bandH = 2 * Math.round((128 * u) / 2);
   const outH = screenH + bandH;
   const pointScale = srcW / (begin.w ?? srcW); // source pixels per point

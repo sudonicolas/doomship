@@ -126,3 +126,16 @@ test('golden: the spike recording with the splash', () => {
   golden('spike-89cd1d6.splash.ass', p.splashAss);
   golden('spike-89cd1d6.splash.filter', p.graph);
 });
+
+test('a landscape screen: the band and text scale by its height, not its width', () => {
+  const desktop: Events = { videoStart: 0, events: [
+    { event: 'begin', t: 0, w: 1280, h: 720 }, { event: 'caption', t: 0, text: 'Wide' },
+    { event: 'tap', t0: 1, t: 1.2, x: 640, y: 360 }, { event: 'hold', t: 1.2, seconds: 1.5 }, { event: 'end', t: 2.8 },
+  ] };
+  const p = plan(desktop, 2560, 1440, { width: 960, fps: 15, accent: '#161616', splash: true });
+  assert.equal(p.outW, 960);
+  assert.equal(p.outH, 540 + 86);
+  assert.match(p.ass, /^Style: Caption,Inter ExtraBold,25\.7,/m);
+  assert.match(p.ass, /Ring,,0,0,0,,\{\\an5\\pos\(480\.0,356\.0\)/);
+  assert.match(p.splashAss, /^Style: Wordmark,Inter ExtraBold,45\.9,/m);
+});
