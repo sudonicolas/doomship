@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -134,7 +134,7 @@ test('--config wins over the repo, and file problems are explained', () => {
 
 test('every example is a valid config', () => {
   const dir = fileURLToPath(new URL('../examples/', import.meta.url));
-  for (const name of (existsSync(dir) ? readdirSync(dir) : []).filter((f) => f.endsWith('.json'))) {
+  for (const name of readdirSync(dir).filter((f) => f.endsWith('.json'))) {
     const r = validateConfig(JSON.parse(readFileSync(join(dir, name), 'utf8')), name);
     assert.ok('config' in r, `${name}: ${JSON.stringify(r)}`);
   }

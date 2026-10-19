@@ -215,7 +215,7 @@ export function loadConfig(repo: string, configPath?: string): Config {
   if (!existsSync(file)) {
     throw new ConfigError(configPath
       ? `${file}: no such file`
-      : `${file}: no config; add one to the repo or pass --config <file> (see examples/)`);
+      : `${file}: no config; add one to the repo or pass --config <file> (see examples/encore.doomship.json)`);
   }
   let raw: unknown;
   try {

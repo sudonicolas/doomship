@@ -85,27 +85,28 @@ change is exported into `~/Library/Caches/doomship/`, built and served from ther
 land in `~/Movies/doomship/`.
 
 A demo uses your platform's own test tool, so your existing tests are the examples and the
-compiler catches mistakes. On iOS it's an XCUITest; on the web, a Playwright script:
+compiler catches mistakes. On iOS it's an XCUITest, on the web a Playwright script, and on the
+Mac Swift that runs inside the app:
 
-```ts
-// demo.ts, written by the agent for a web app (abridged)
-export default async function (page, demo) {
-  await page.goto('/');
-  const gallery = page.locator('.gallery').first();
-  await gallery.evaluate((el) => el.scrollIntoView({ block: 'center' }));
-  await demo.begin();
+```swift
+// demo.swift, written by the agent for Encore 7c57d9e (abridged)
+func play(_ demo: Demo) throws {
+    try demo.clickMenuBarItem()                  // open the popover, before the GIF starts
+    demo.begin()
 
-  await demo.caption('Rounder corners on every shot');
-  await demo.show(gallery.locator('.slide.on'));      // zoom in, outlined
+    demo.caption("Copy a hex colour")
+    demo.hold(0.8)
+    demo.copy("#FF6B35")                         // the app's own clipboard, never yours
+    let orange = try demo.element("#FF6B35")     // waits for the new row
+    demo.caption("Encore shows it as a swatch")
+    demo.show(orange, seconds: 2)                // zoom in, outlined
 
-  await demo.caption('The next shot slides in');
-  await demo.tap(gallery.locator('.slide').nth(1));   // tap, with a ring
-  await demo.hold(1.4);
-
-  await demo.caption('Or play them as a slideshow');
-  await demo.tap(gallery.locator('.play'));
-  await demo.hold(4);
-  await demo.end();
+    demo.caption("Short hex and alpha work too")
+    demo.copy("#2EC4B6")
+    demo.hold(0.6)
+    demo.copy("#6C5CE7CC")
+    demo.hold(2)
+    demo.end()
 }
 ```
 
@@ -115,9 +116,9 @@ export default async function (page, demo) {
 
 ```html
 <!-- doomship -->
-<img src="https://github.com/you/app/blob/…/a9e34f2.gif?raw=true" width="300" alt="Rounder corners on every shot. The next shot slides in. Or play them as a slideshow">
+<img src="https://github.com/sudonicolas/Encore/blob/…/7c57d9e.gif?raw=true" width="300" alt="Copy a hex colour. Encore shows it as a swatch. Short hex and alpha work too">
 
-<sub>a9e34f2 · made with <a href="https://github.com/sudonicolas/doomship">doomship</a></sub>
+<sub>7c57d9e · made with <a href="https://github.com/sudonicolas/doomship">doomship</a></sub>
 <!-- /doomship -->
 ```
 
@@ -225,7 +226,7 @@ it isn't the repo's root.
 **With Claude Code**, from this repo:
 
 ```
-/doomship ~/code/app a9e34f2
+/doomship ~/code/app abc1234
 /doomship ~/code/app main..my-branch
 /doomship ~/code/app worktree
 ```
@@ -236,7 +237,7 @@ tries), renders it, looks at the frames, and tells you what it made. It posts on
 **By hand**, the same steps:
 
 ```sh
-node src/cli.ts prepare ~/code/app a9e34f2      # writes the run and its context.md
+node src/cli.ts prepare ~/code/app abc1234      # writes the run and its context.md
 # write demo.swift or demo.ts in the run directory
 node src/cli.ts record <run>                     # --viewport desktop for a wide browser
 node src/cli.ts render <run>                     # --mp4 for a sharper copy, --no-splash without it

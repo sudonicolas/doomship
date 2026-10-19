@@ -16,8 +16,9 @@ the run directory the CLI prints.
 node src/cli.ts prepare <repo> <change>            # or --worktree instead of <change>
 ```
 
-If the repo has no `.doomship.json`, pass `--config examples/<repo name>.doomship.json` when there
-is one; if there's none, stop and say a config is needed.
+If the repo has no `.doomship.json`, pass `--config examples/<repo name>.doomship.json` (or
+`local/<repo name>.doomship.json`, for private apps) when there is one; if there's none, stop and
+say a config is needed.
 The output names the run directory (`~/Library/Caches/doomship/<repo>/runs/<id>/`). For a fresh
 attempt at a change already run before, delete that run directory first.
 
