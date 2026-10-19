@@ -3,3 +3,10 @@ node_modules/
 
 # Configs and scripts for private apps doomship is tried on; kept out of the public repo.
 local/
+
+# The build plan and its notes: kept locally, not published.
+CLAUDE.md
+ROADMAP.md
+docs/PRD.md
+docs/SPIKE.md
+docs/TRIALS.md
