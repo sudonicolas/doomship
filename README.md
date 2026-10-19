@@ -23,7 +23,8 @@ soon as the reviewer opens the page.
 ## The GIF
 
 The web driver plays the demo in a phone-sized browser (390 by 844 at 3x, with touch) or a
-desktop one (1280 by 720 at 2x). On iOS it runs in the Simulator. Every GIF:
+desktop one (1280 by 720 at 2x). On iOS it runs in the Simulator, and on the Mac inside the app
+itself. Every GIF:
 
 - **shows the change, in order**, from the screen nearest to it to the result;
 - **captions each step** in a band above the screen, in your app's accent colour, so the app
@@ -35,6 +36,24 @@ desktop one (1280 by 720 at 2x). On iOS it runs in the Simulator. Every GIF:
 
 A change with nothing to see (a data model, a refactor) is skipped with a one-line reason,
 never padded with filler.
+
+## On the Mac
+
+<p align="center">
+  <img src="docs/media/encore-pr.gif" width="720" alt="Encore's pull request on GitHub, with doomship's GIF playing in the description: a hex colour is copied in Encore's menu bar popover and its row shows an orange swatch, then a teal, a yellow and a purple one, ending on the doomship splash">
+</p>
+
+<p align="center"><sub>
+  <a href="https://github.com/sudonicolas/Encore/pull/2">A real pull request</a> to
+  <a href="https://github.com/sudonicolas/Encore">Encore</a>, a menu bar clipboard history,
+  with the GIF doomship recorded and posted.
+</sub></p>
+
+A Swift package app is built with `swift build` and launched with a small library that plays the
+demo from inside it. It finds buttons and rows through the accessibility API, as XCUITest does,
+and captures only the app's own windows, over a plain backdrop: never your desktop, your menu bar
+or another app. The app runs with an empty home folder and a clipboard of its own, so it can't
+read your data, and nothing it does reaches your real clipboard.
 
 ## How it works
 
@@ -119,6 +138,10 @@ For iOS apps, Xcode with an iPhone simulator. `doctor` checks everything and mak
 node src/cli.ts doctor --fix
 ```
 
+For Mac apps, the Swift toolchain (Xcode or the command line tools), and the Accessibility
+permission for the terminal or editor you run doomship from (System Settings, Privacy & Security,
+Accessibility), which the demo needs to find and click things. Screen Recording isn't needed.
+
 For web apps, Playwright's Chromium:
 
 ```sh
@@ -169,6 +192,26 @@ agent how to put your app in any state: launch arguments, test accounts, gotchas
 already running, such as a preview deployment.
 </details>
 
+<details>
+<summary><b>A macOS config</b></summary>
+
+```json
+{
+  "platform": "macos",
+  "product": "Encore",
+  "accent": "#1F74D2",
+  "areas": { "ui": ["Sources/Encore/Views/**"] },
+  "notes": [
+    "A menu bar app: the demo opens its popover with demo.clickMenuBarItem().",
+    "demo.copy(\"…\") puts text on the app's private clipboard."
+  ]
+}
+```
+
+`product` is the Swift package's executable; `package` is the folder with `Package.swift` when
+it isn't the repo's root.
+</details>
+
 ## Use it
 
 **With Claude Code**, from this repo:
@@ -215,6 +258,8 @@ doomship is young. What works today:
   visible changes gave a usable GIF in one or two tries, and the one with nothing on screen was
   skipped.
 - **Web**, through Playwright and Chromium, in a phone or a desktop browser.
+- **macOS**, for Swift package apps, tried on a menu bar app: a new feature for Encore recorded
+  on the first try and posted to [its PR](https://github.com/sudonicolas/Encore/pull/2).
 - **The Claude Code skill**, `/doomship`, from this repo.
 
 Next: posting to PRs tried live on GitHub, an npm package and a global skill install, a GitHub
