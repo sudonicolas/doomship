@@ -84,6 +84,12 @@ test('spotlights zoom on the element, at most 2.2x, with an outline while the zo
   assert.match(p.ass, /^Style: Spot,Inter ExtraBold,20,&HFF000000,&H00FFFFFF,&H00D65658,/m);
 });
 
+test('a recording with few pixels (a Mac at 1x) zooms no further than 1.5 source pixels per GIF pixel', () => {
+  // The synthetic demo at 1 px per point, shown at its own width.
+  const p = plan(synthetic, 402, 874, { ...options, width: 402 });
+  assert.equal(p.spotlights[0].zoom, 1.5);
+});
+
 test('golden: the spike recording plans exactly as the 0.5 GIF did', () => {
   const events = JSON.parse(readFileSync(here('fixtures/spike-89cd1d6.events.json'), 'utf8')) as Events;
   const p = plan(events, W, H, options);

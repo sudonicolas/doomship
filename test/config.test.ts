@@ -27,6 +27,15 @@ test('a minimal ios config is valid and gets defaults', () => {
   assert.deepEqual(r.config.notes, []);
 });
 
+test('a minimal macos config is valid and gets defaults', () => {
+  const r = validateConfig({ platform: 'macos', product: 'Encore' }, 'x.json');
+  assert.ok('config' in r);
+  if (r.config.platform !== 'macos') return assert.fail('not macos');
+  assert.equal(r.config.package, '.');
+  assert.equal(r.config.product, 'Encore');
+  assert.deepEqual(r.config.launchArguments, []);
+});
+
 test('web configs need start or url, not both', () => {
   assert.deepEqual(errorsOf({ platform: 'web', url: 'https://preview.example.com' }), []);
   assert.deepEqual(errorsOf({ platform: 'web', start: { command: 'npm run dev', url: 'http://localhost:3000' } }), []);
@@ -37,8 +46,8 @@ test('web configs need start or url, not both', () => {
 
 test('each bad field is named and explained', () => {
   const cases: [Record<string, unknown>, RegExp][] = [
-    [{}, /^platform: required, "ios" or "web"/],
-    [{ platform: 'android' }, /^platform: must be "ios" or "web", not "android"/],
+    [{}, /^platform: required, "ios", "web" or "macos"/],
+    [{ platform: 'android' }, /^platform: must be "ios", "web" or "macos", not "android"/],
     [{ ...ios, scheme: undefined }, /^scheme: required for ios, the Xcode scheme/],
     [{ ...ios, scheme: '' }, /^scheme: must be the Xcode scheme/],
     [{ ...ios, project: 'App' }, /^project: must end in \.xcodeproj or \.xcworkspace/],
@@ -52,6 +61,9 @@ test('each bad field is named and explained', () => {
     [{ ...ios, colour: '#000000' }, /^colour: not a field doomship knows; the fields for ios are platform, project/],
     [{ ...ios, url: 'https://x' }, /^url: only for web apps, and this one is ios/],
     [{ platform: 'web', url: 'u', scheme: 'App' }, /^scheme: only for ios apps/],
+    [{ platform: 'macos' }, /^product: required for macos, the Swift package's executable product/],
+    [{ platform: 'macos', product: 'App', project: 'App.xcodeproj' }, /^project: only for ios apps, and this one is macos/],
+    [{ platform: 'web', url: 'u', product: 'App' }, /^product: only for macos apps/],
   ];
   for (const [raw, expected] of cases) {
     const errors = errorsOf(raw);

@@ -13,10 +13,10 @@ export const quietLimit = 240;
 export type Logged = { code: number | null; stalled: boolean; seconds: number };
 
 /** Runs a command with its output in `log`; kills it when the log stays the same size for `quiet` seconds. */
-export function runLogged(cmd: string, args: string[], log: string, quiet = quietLimit): Promise<Logged> {
+export function runLogged(cmd: string, args: string[], log: string, quiet = quietLimit, opts: { cwd?: string; env?: NodeJS.ProcessEnv } = {}): Promise<Logged> {
   const started = Date.now();
   const fd = openSync(log, 'w');
-  const child = spawn(cmd, args, { stdio: ['ignore', fd, fd] });
+  const child = spawn(cmd, args, { stdio: ['ignore', fd, fd], ...opts });
   closeSync(fd);
   let size = 0, still = 0, stalled = false;
   const timer = setInterval(() => {

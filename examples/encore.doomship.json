@@ -1,0 +1,14 @@
+{
+  "platform": "macos",
+  "product": "Encore",
+  "accent": "#1F74D2",
+  "areas": {
+    "ui": ["Sources/Encore/Views/**", "Sources/Encore/Lookups/LookupViews.swift", "Sources/Encore/Intelligence/IntelligenceViews.swift", "Sources/Encore/AppDelegate.swift"]
+  },
+  "notes": [
+    "Encore is a clipboard history in the macOS menu bar. The demo opens its popover with demo.clickMenuBarItem() before demo.begin().",
+    "History starts empty on every recording. demo.copy(\"…\") puts text on the app's private clipboard, and Encore records it within half a second, as the newest row.",
+    "A popover row is one accessibility element named by the clipping's title (its text, for a short clipping); its default action copies it. The chevron is a button named \"Show Details\".",
+    "The popover's search field is named \"Search\"."
+  ]
+}

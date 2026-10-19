@@ -145,7 +145,8 @@ export function plan(events: Events, srcW: number, srcH: number, o: RenderOption
     const a = at(e.t), b = at(e.t + (e.seconds ?? 1.5));
     const x = (e.x ?? 0) * pointScale, y = (e.y ?? 0) * pointScale;
     const ew = Math.max(1, (e.w ?? 0) * pointScale), eh = Math.max(1, (e.h ?? 0) * pointScale);
-    const zoom = clamp(Math.min((0.5 * srcW) / ew, (0.3 * srcH) / eh), 1.2, 2.2);
+    // At most 2.2x, and no further than the recording has pixels for (a Mac's 1x screen has few).
+    const zoom = clamp(Math.min((0.5 * srcW) / ew, (0.3 * srcH) / eh, (1.5 * srcW) / outW), 1.2, 2.2);
     const x0 = clamp(x + ew / 2 - srcW / (2 * zoom), 0, srcW - srcW / zoom);
     const y0 = clamp(y + eh / 2 - srcH / (2 * zoom), 0, srcH - srcH / zoom);
     return { a, b, zoom, x0, y0, x, y, ew, eh };

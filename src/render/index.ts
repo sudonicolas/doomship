@@ -83,7 +83,9 @@ export function render(r: Run, opts: { mp4?: boolean; splash?: boolean } = {}): 
   const gif = join(out, `${name}.gif`), png = join(out, `${name}.png`), json = join(out, `${name}.json`);
 
   let p, step;
-  for (step of steps) {
+  // Never wider than the recording: a Mac's windows at 1x are often narrower than the ladder.
+  const fit = <T extends { width: number }>(step: T): T => ({ ...step, width: Math.min(step.width, w - (w % 2)) });
+  for (step of steps.map(fit)) {
     p = plan(events, w, h, { ...step, accent: r.config.accent, splash });
     writeFileSync(join(r.dir, 'render.ass'), p.ass);
     writeFileSync(join(r.dir, 'splash.ass'), p.splashAss);
@@ -100,7 +102,7 @@ export function render(r: Run, opts: { mp4?: boolean; splash?: boolean } = {}): 
   let mp4: string | undefined;
   if (opts.mp4) {
     mp4 = join(out, `${name}.mp4`);
-    const full = plan(events, w, h, { ...steps[0], accent: r.config.accent, splash });
+    const full = plan(events, w, h, { ...fit(steps[0]), accent: r.config.accent, splash });
     writeFileSync(join(r.dir, 'render.ass'), full.ass);
     writeFileSync(join(r.dir, 'splash.ass'), full.splashAss);
     writeFileSync(join(r.dir, 'render-mp4.filter'), full.mp4Graph);

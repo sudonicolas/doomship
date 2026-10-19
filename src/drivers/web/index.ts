@@ -139,7 +139,7 @@ async function startApp(run: Run): Promise<{ url: string; stop: () => void }> {
   return { url, stop };
 }
 
-type Frame = { file: string; t: number };
+export type Frame = { file: string; t: number };
 
 /**
  * Records the page as a stream of screenshots at device pixels (about 30 a second), each stamped
@@ -185,7 +185,7 @@ function capture(page: Page, dir: string) {
 }
 
 /** The frames as one H.264 video, each held until the next; the last until `until`. */
-function assemble(frames: Frame[], until: number, video: string, dir: string): void {
+export function assemble(frames: Frame[], until: number, video: string, dir: string): void {
   const ffmpeg = findFfmpeg(exec, process.env).path ?? 'ffmpeg';
   const list = frames.map((f, i) => `file '${f.file}'\nduration ${Math.max(0.001, (frames[i + 1]?.t ?? until) - f.t).toFixed(4)}`);
   list.push(`file '${frames.at(-1)!.file}'`);

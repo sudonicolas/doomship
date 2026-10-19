@@ -28,26 +28,36 @@ export type WebConfig = Common & {
   start?: { command: string; url: string };
   url?: string;
 };
-export type Config = IosConfig | WebConfig;
+export type MacosConfig = Common & {
+  platform: 'macos';
+  /** The folder with Package.swift, relative to the repo. */
+  package: string;
+  product: string;
+  launchArguments: string[];
+};
+export type Config = IosConfig | WebConfig | MacosConfig;
+export type Platform = Config['platform'];
 
 /** Used when the config has no accent and the app has no AccentColor asset: GitHub's dark grey. */
 export const defaultAccent = '#24292F';
 export const configFileName = '.doomship.json';
 
-type Field = { about: string; platforms: ('ios' | 'web')[]; required?: boolean };
+type Field = { about: string; platforms: Platform[]; required?: boolean };
 const fields: Record<string, Field> = {
-  platform: { about: '"ios" or "web"', platforms: ['ios', 'web'], required: true },
+  platform: { about: '"ios", "web" or "macos"', platforms: ['ios', 'web', 'macos'], required: true },
   project: { about: 'the .xcodeproj or .xcworkspace, relative to the repo', platforms: ['ios'], required: true },
   scheme: { about: 'the Xcode scheme that builds the app', platforms: ['ios'], required: true },
   uiTestTarget: { about: 'the UI test target the demo runs in', platforms: ['ios'], required: true },
   injectInto: { about: 'a Swift file in that target the demo is appended to, relative to the repo', platforms: ['ios'], required: true },
   simulator: { about: 'the device type to record on, such as "iPhone 17"', platforms: ['ios'] },
-  launchArguments: { about: 'arguments the app is launched with, a list of strings', platforms: ['ios'] },
+  launchArguments: { about: 'arguments the app is launched with, a list of strings', platforms: ['ios', 'macos'] },
+  package: { about: 'the folder with Package.swift, relative to the repo; defaults to the repo itself', platforms: ['macos'] },
+  product: { about: 'the Swift package\'s executable product, the app', platforms: ['macos'], required: true },
   start: { about: 'how to start the app: { "command": "npm run dev", "url": "http://localhost:3000" }', platforms: ['web'] },
   url: { about: 'a URL already serving the app, such as a preview deployment', platforms: ['web'] },
-  accent: { about: 'the caption band colour, "#RRGGBB"; defaults to the app\'s AccentColor asset', platforms: ['ios', 'web'] },
-  areas: { about: 'area name to a list of globs, such as { "ui": ["App/**"] }', platforms: ['ios', 'web'] },
-  notes: { about: 'facts about the app for the agent, a list of strings', platforms: ['ios', 'web'] },
+  accent: { about: 'the caption band colour, "#RRGGBB"; defaults to the app\'s AccentColor asset', platforms: ['ios', 'web', 'macos'] },
+  areas: { about: 'area name to a list of globs, such as { "ui": ["App/**"] }', platforms: ['ios', 'web', 'macos'] },
+  notes: { about: 'facts about the app for the agent, a list of strings', platforms: ['ios', 'web', 'macos'] },
 };
 
 const isStringList = (v: unknown): v is string[] => Array.isArray(v) && v.every((s) => typeof s === 'string');
@@ -63,8 +73,8 @@ export function validateConfig(raw: unknown, file: string): { config: Omit<Confi
   const c = raw as Record<string, unknown>;
   const errors: string[] = [];
   const platform = c.platform;
-  if (platform !== 'ios' && platform !== 'web') {
-    errors.push(platform === undefined ? 'platform: required, "ios" or "web"' : `platform: must be "ios" or "web", not ${show(platform)}`);
+  if (platform !== 'ios' && platform !== 'web' && platform !== 'macos') {
+    errors.push(platform === undefined ? 'platform: required, "ios", "web" or "macos"' : `platform: must be "ios", "web" or "macos", not ${show(platform)}`);
     return { errors };
   }
 
@@ -111,6 +121,9 @@ export function validateConfig(raw: unknown, file: string): { config: Omit<Confi
     if (typeof c.injectInto === 'string' && c.injectInto.trim() && !c.injectInto.endsWith('.swift')) {
       errors.push(`injectInto: must be a .swift file, not ${show(c.injectInto)}`);
     }
+  } else if (platform === 'macos') {
+    for (const name of ['package', 'product']) nonEmptyString(name);
+    stringList('launchArguments');
   } else {
     nonEmptyString('url');
     if (c.start !== undefined) {
@@ -130,6 +143,14 @@ export function validateConfig(raw: unknown, file: string): { config: Omit<Confi
     areas: (c.areas as Record<string, string[]>) ?? {},
     notes: (c.notes as string[]) ?? [],
   };
+  if (platform === 'macos') {
+    return {
+      config: {
+        ...common, platform, package: (c.package as string) ?? '.', product: c.product as string,
+        launchArguments: (c.launchArguments as string[]) ?? [],
+      },
+    };
+  }
   return platform === 'ios'
     ? {
         config: {

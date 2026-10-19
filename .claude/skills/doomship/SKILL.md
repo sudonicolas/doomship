@@ -160,6 +160,45 @@ final class Doomship: XCTestCase {
 }
 ```
 
+### macOS apps (`"platform": "macos"`)
+
+A Swift package app (SwiftUI or AppKit). `demo.swift` is one function, compiled with the helper
+(`resources/macos/Doomship.swift`) into a library the app loads at launch; the demo runs inside
+the app, on its own thread, while the helper captures the app's windows over a plain backdrop.
+The app starts with an empty home folder in the cache and a clipboard of its own, so it reads
+none of the person's data. No `XCTest`, no `app.launch()`: the app is already running.
+
+| Call | What it does |
+|---|---|
+| `try demo.element("name", role: "AXButton")` | Waits up to 5 s for an element whose identifier, title, label or value is `name`; the error lists the names on screen. `role` is optional. |
+| `try demo.tap(el)` | Clicks it (accessibility press) with a ring. Rows and buttons, not their text. |
+| `demo.show(el, seconds:)` | The zoom and outline, once the element has stopped moving. |
+| `try demo.clickMenuBarItem()` | Opens a menu bar app's popover. The menu bar isn't in the GIF, so do it before `begin()`. |
+| `demo.copy("text")` | Puts text on the app's private clipboard, as if copied in another app. |
+| `demo.type("text", into: el)` | Types into a text field. |
+| `begin`, `caption`, `hold`, `end` | As for iOS. |
+
+```swift
+import Foundation
+
+func play(_ demo: Demo) throws {
+    try demo.clickMenuBarItem()                 // setup before begin()
+    demo.begin()
+    demo.caption("Copy a hex colour")
+    demo.hold(0.8)
+    demo.copy("#FF6B35")
+    let row = try demo.element("#FF6B35")       // waits for the new row
+    demo.caption("Encore shows it as a swatch")
+    demo.show(row, seconds: 2)
+    demo.hold(2)                                // on the result
+    demo.end()
+}
+```
+
+A compile error is reported as `demo.swift:<line>`. Things copied while another app is in front
+are recorded as from that app (its icon and name show), so open the app's window or popover
+before seeding data. The app takes focus while it records.
+
 ## 4. Record, at most 3 attempts
 
 ```sh

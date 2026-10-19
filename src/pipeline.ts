@@ -1,6 +1,7 @@
 import { appendFileSync, existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { iosDriver } from './drivers/ios/index.ts';
+import { macosDriver } from './drivers/macos/index.ts';
 import { webDriver, type Viewport } from './drivers/web/index.ts';
 import type { Driver } from './drivers/driver.ts';
 import type { Rendered } from './render/index.ts';
@@ -10,11 +11,11 @@ import type { Run } from './run.ts';
 export type Attempt = { buildSeconds: number; recordSeconds?: number; outcome: 'recorded' | 'build failed' | 'demo failed' | 'stalled'; failure?: string };
 
 export function driverFor(run: Run): Driver {
-  return run.config.platform === 'ios' ? iosDriver : webDriver;
+  return { ios: iosDriver, web: webDriver, macos: macosDriver }[run.config.platform];
 }
 
-/** The demo's file in the run: Swift for iOS, TypeScript for web. */
-export const demoName = (run: Run) => (run.config.platform === 'ios' ? 'demo.swift' : 'demo.ts');
+/** The demo's file in the run: Swift for iOS and macOS, TypeScript for web. */
+export const demoName = (run: Run) => (run.config.platform === 'web' ? 'demo.ts' : 'demo.swift');
 
 export function attemptsOf(run: Run): Attempt[] {
   const file = join(run.dir, 'attempts.jsonl');
