@@ -9,6 +9,16 @@
   Your coding agent writes the demo. doomship records it, captions it and posts it.
 </p>
 
+<p align="center">
+  <img src="docs/media/encore-pr.gif" width="820" alt="Encore's pull request on GitHub, with doomship's GIF playing in the description: a hex colour is copied in Encore's menu bar popover and its row shows an orange swatch, then a teal, a yellow and a purple one, ending on the doomship splash">
+</p>
+
+<p align="center"><sub>
+  <a href="https://github.com/sudonicolas/Encore/pull/2">A real pull request</a> to
+  <a href="https://github.com/sudonicolas/Encore">Encore</a>, a menu bar clipboard history: the
+  demo written by the agent, the rest by doomship. No edits by hand.
+</sub></p>
+
 ---
 
 Reviewers can't see a UI change in a diff. They check out the branch and run it, or they trust
@@ -21,6 +31,14 @@ tap lands, and a zoom on the new thing. Then it goes into the PR description, wh
 soon as the reviewer opens the page.
 
 ## The GIF
+
+<p align="center">
+  <img src="docs/media/encore-swatches.gif" width="300" alt="Encore's menu bar popover: a hex colour is copied and its row shows an orange swatch, zoomed and outlined; then a teal, a yellow and a translucent purple colour get swatches too">
+</p>
+
+<p align="center"><sub>
+  The GIF from that pull request, as doomship rendered it.
+</sub></p>
 
 The web driver plays the demo in a phone-sized browser (390 by 844 at 3x, with touch) or a
 desktop one (1280 by 720 at 2x). On iOS it runs in the Simulator, and on the Mac inside the app
@@ -38,16 +56,6 @@ A change with nothing to see (a data model, a refactor) is skipped with a one-li
 never padded with filler.
 
 ## On the Mac
-
-<p align="center">
-  <img src="docs/media/encore-pr.gif" width="720" alt="Encore's pull request on GitHub, with doomship's GIF playing in the description: a hex colour is copied in Encore's menu bar popover and its row shows an orange swatch, then a teal, a yellow and a purple one, ending on the doomship splash">
-</p>
-
-<p align="center"><sub>
-  <a href="https://github.com/sudonicolas/Encore/pull/2">A real pull request</a> to
-  <a href="https://github.com/sudonicolas/Encore">Encore</a>, a menu bar clipboard history,
-  with the GIF doomship recorded and posted.
-</sub></p>
 
 A Swift package app is built with `swift build` and launched with a small library that plays the
 demo from inside it. It finds buttons and rows through the accessibility API, as XCUITest does,
