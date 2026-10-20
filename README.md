@@ -10,6 +10,10 @@
 </p>
 
 <p align="center">
+  <img src="resources/brand/social-preview.png" width="820" alt="Doomscroll pull requests. Ship features. A change, the agent writes the demo, doomship records the GIF, it plays in the PR.">
+</p>
+
+<p align="center">
   <img src="docs/media/encore-pr.gif" width="820" alt="Encore's pull request on GitHub, with doomship's GIF playing in the description: a hex colour is copied in Encore's menu bar popover and its row shows an orange swatch, then a teal, a yellow and a purple one, ending on the doomship splash">
 </p>
 
