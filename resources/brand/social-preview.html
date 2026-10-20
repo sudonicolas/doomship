@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>doomship social preview</title>
+<style>
+  /* 1280 x 640. Margins 64. Four columns of 264 with 32 gutters: 4*264 + 3*32 = 1152. */
+  :root {
+    --paper: #F4F3EF;
+    --ink: #0D0F14;
+    --red: #FF3B30;
+    --tint: #E7E4DD;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1280px; height: 640px; background: var(--paper); }
+  body {
+    position: relative; overflow: hidden;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  .brand {
+    z-index: 1;
+    position: absolute; left: 64px; top: 56px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .brand img { width: 48px; height: 48px; display: block; }
+  .brand span { font-size: 32px; font-weight: 700; letter-spacing: -0.02em; }
+
+  .ship { position: absolute; left: 836px; top: 10px; width: 470px; height: auto; display: block; }
+
+  h1 {
+    z-index: 1;
+    position: absolute; left: 60px; top: 168px;
+    font-size: 92px; line-height: 1; font-weight: 700; letter-spacing: -0.045em;
+  }
+  h1 em { font-style: normal; color: var(--red); }
+
+  .flow {
+    position: absolute; left: 64px; right: 64px; top: 432px;
+    display: grid; grid-template-columns: repeat(4, 264px); column-gap: 32px;
+  }
+  .rule {
+    position: absolute; left: 64px; right: 64px; top: 432px; height: 4px; background: var(--ink);
+  }
+  .step { position: relative; padding-top: 30px; }
+  .step::before {                      /* a node on the rule */
+    content: ""; position: absolute; left: 0; top: -6px;
+    width: 16px; height: 16px; border-radius: 50%; background: var(--ink);
+  }
+  .step.last::before { background: var(--red); }
+  .step i {
+    display: block; font-style: normal; font-weight: 700; font-size: 44px; line-height: 1;
+    color: var(--ink); letter-spacing: -0.02em; margin-bottom: 10px;
+  }
+  .step p { font-size: 30px; line-height: 1.15; font-weight: 500; letter-spacing: -0.02em; }
+</style>
+</head>
+<body>
+  <svg class="ship" viewBox="-250 -190 520 445" fill="var(--tint)" aria-hidden="true">
+    <path d="M -14.5 -173.7 L -14.5 99.5 C -14.5 109.7 -7.3 113.8 1.5 108.8 L 220.3 -18 C 229.1 -23 229.4 -31.8 220.8 -37.4 L 0.9 -182 C -7.6 -187.6 -14.5 -183.9 -14.5 -173.7 Z"/>
+    <path d="M -39.6 -102.4 L -39.6 107.4 C -39.6 113.2 -44.4 118 -50.2 118 L -167.6 118 C -173.4 118 -175.8 113.9 -172.8 109 L -45 -104 C -42 -108.9 -39.6 -108.2 -39.6 -102.4 Z"/>
+    <path d="M -244.2 144.4 L 264 144.4 C 237.6 223.6 191.4 250 132 250 L -145.2 250 C -198 250 -231 210.4 -244.2 144.4 Z"/>
+  </svg>
+
+  <div class="brand">
+    <img src="doomship.svg" alt="">
+    <span>doomship</span>
+  </div>
+
+  <h1>Doomscroll pull requests.<br><em>Ship features.</em></h1>
+
+  <div class="rule"></div>
+  <div class="flow">
+    <div class="step"><i>1</i><p>A change</p></div>
+    <div class="step"><i>2</i><p>The agent writes the demo</p></div>
+    <div class="step"><i>3</i><p>doomship records the GIF</p></div>
+    <div class="step last"><i>4</i><p>It plays in the PR</p></div>
+  </div>
+</body>
+</html>
